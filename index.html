@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>宝贝报备</title>
+<title>平安报备</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -207,13 +207,13 @@
 
 <div class="container">
   <div class="header">
-    <div class="icon">💖</div>
-    <h1>宝贝报备</h1>
-    <p>不管去哪都要让我知道，爱你</p>
+    <div class="icon">🛡️</div>
+    <h1>平安报备</h1>
+    <p>到哪了跟我说一声，不然会担心</p>
   </div>
 
   <div class="card">
-    <div class="card-title">📍 在哪呢宝贝</div>
+    <div class="card-title">📍 你在哪</div>
 
     <div class="form-group">
       <label>当前地点 <span class="required">*</span></label>
@@ -250,17 +250,17 @@
 
     <div class="form-group">
       <label>想说点什么</label>
-      <textarea id="remark" placeholder="比如：刚吃完芒果糯米饭超好吃～想你" maxlength="300"></textarea>
+      <textarea id="remark" placeholder="比如：刚吃完芒果糯米饭超好吃～" maxlength="300"></textarea>
       <div class="sweet-msg-toggle">
         <label class="toggle-switch">
           <input type="checkbox" id="autoSweet" checked>
           <span class="toggle-slider"></span>
         </label>
-        <span style="font-size:12px;color:#999;">自动附加甜蜜话</span>
+        <span style="font-size:12px;color:#999;">附加暖心话</span>
       </div>
     </div>
 
-    <button class="btn-submit" id="submitBtn" onclick="submitReport()">💌 告诉老公</button>
+    <button class="btn-submit" id="submitBtn" onclick="submitReport()">📨 发送报备</button>
   </div>
 
   <div class="card">
@@ -276,16 +276,16 @@ const TOKEN = 'fd7f9d489507418bab7910cbac0c02ce';
 const STORAGE_KEY = 'thai_checkin_history';
 
 const sweetMsgs = [
-  '爱你哟～mua！💋',
-  '想你了，抱抱～',
-  '老公最好了，亲一口！',
-  '等我回去好好补偿你～',
-  '你是我的小太阳☀',
-  '每分每秒都在想你～',
-  '没有你的旅行总觉得少了什么',
-  '回来给你带礼物哦，想你',
-  '今天也是爱老公的一天！',
-  '想钻进你怀里，么么哒'
+  '一切顺利，别担心～',
+  '这里挺安全的，放心',
+  '刚拍了好多照片，回头给你看',
+  '天气很好，心情也不错',
+  '在吃好吃的，给你也带一份',
+  '路上遇到好心人了，这边人挺热情',
+  '今天行程很顺利',
+  '回来给你带礼物哦',
+  '这边夜景很美，下次一起来',
+  '有点累了但很开心～'
 ];
 
 function setLoc(place) {
@@ -331,8 +331,8 @@ async function submitReport() {
   let remark = document.getElementById('remark').value.trim();
   const autoSweet = document.getElementById('autoSweet').checked;
 
-  if (!location) { showToast('宝贝，告诉我在哪呀～', 'error'); return; }
-  if (!status) { showToast('选一下你的状态嘛', 'error'); return; }
+  if (!location) { showToast('请填写当前地点～', 'error'); return; }
+  if (!status) { showToast('请选择当前状态', 'error'); return; }
 
   const btn = document.getElementById('submitBtn');
   btn.disabled = true;
@@ -346,12 +346,12 @@ async function submitReport() {
   const bjTime = now.toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false });
 
   const statusIcon = status === '求助' ? '🔴' : status === '需留意' ? '🟡' : '🟢';
-  const title = status === '求助' ? '【紧急】宝贝需要你！' : `宝贝报备 · ${location}`;
+  const title = status === '求助' ? '【紧急】需要帮助！' : `平安报备 · ${location}`;
 
   const content = `
     <div style="padding:12px;font-size:15px;font-family:-apple-system,sans-serif;">
       <div style="font-size:20px;font-weight:bold;margin-bottom:14px;color:#f5576c;">
-        ${statusIcon} ${status === '求助' ? '宝贝需要你！' : status === '需留意' ? '宝贝有点担心' : '宝贝很安全'}
+        ${statusIcon} ${status === '求助' ? '她需要帮助！' : status === '需留意' ? '她有点担心' : '她很安全'}
       </div>
       <div style="background:#fff5f7;border-radius:10px;padding:14px;margin-bottom:10px;">
         <p style="margin:0 0 6px;"><b>📍 地点：</b>${escapeHtml(location)}</p>
@@ -370,7 +370,7 @@ async function submitReport() {
     });
     const result = await resp.json();
     if (result.code === 200) {
-      showToast('报备成功！老公已收到 💕', 'success');
+      showToast('报备成功！对方已收到 📨', 'success');
       saveHistory(location, status, remark, bkTime);
       document.getElementById('remark').value = '';
     } else {
@@ -381,7 +381,7 @@ async function submitReport() {
   }
 
   btn.disabled = false;
-  btn.textContent = '💌 告诉老公';
+  btn.textContent = '📨 发送报备';
 }
 
 function saveHistory(location, status, remark, time) {
