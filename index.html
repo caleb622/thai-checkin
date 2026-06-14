@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>泰国出行报备</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    padding: 20px;
+  }
+  .container {
+    max-width: 420px;
+    margin: 0 auto;
+  }
+  .header {
+    text-align: center;
+    color: #fff;
+    padding: 30px 0 20px;
+  }
+  .header h1 { font-size: 26px; margin-bottom: 6px; }
+  .header p { opacity: 0.85; font-size: 14px; }
+  .card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 24px 20px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+    margin-bottom: 16px;
+  }
+  .card-title {
+    font-size: 17px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 18px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .form-group { margin-bottom: 16px; }
+  .form-group:last-child { margin-bottom: 0; }
+  .form-group label {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    color: #555;
+    margin-bottom: 6px;
+  }
+  .form-group label .required { color: #e74c3c; }
+  .form-group input, .form-group textarea, .form-group select {
+    width: 100%;
+    padding: 12px 14px;
+    border: 2px solid #e8e8e8;
+    border-radius: 10px;
+    font-size: 15px;
+    color: #333;
+    background: #fafafa;
+    transition: border-color 0.2s;
+    -webkit-appearance: none;
+    font-family: inherit;
+  }
+  .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+    outline: none;
+    border-color: #667eea;
+    background: #fff;
+  }
+  .form-group textarea { resize: vertical; min-height: 80px; }
+  .radio-group {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .radio-item {
+    flex: 1;
+    min-width: 80px;
+  }
+  .radio-item input { display: none; }
+  .radio-item label {
+    display: block;
+    text-align: center;
+    padding: 12px 8px;
+    border: 2px solid #e8e8e8;
+    border-radius: 10px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: #fafafa;
+    color: #666;
+  }
+  .radio-item input:checked + label {
+    border-color: #667eea;
+    background: #f0f3ff;
+    color: #667eea;
+    font-weight: 600;
+  }
+  .radio-item.safe input:checked + label { border-color: #27ae60; background: #eafaf1; color: #27ae60; }
+  .radio-item.warn input:checked + label { border-color: #f39c12; background: #fef9e7; color: #f39c12; }
+  .radio-item.danger input:checked + label { border-color: #e74c3c; background: #fdedec; color: #e74c3c; }
+  .location-btns {
+    display: flex;
+    gap: 8px;
+    margin-top: 6px;
+  }
+  .btn-outline {
+    flex: 1;
+    padding: 10px;
+    border: 2px solid #667eea;
+    background: #fff;
+    border-radius: 10px;
+    color: #667eea;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-outline:hover { background: #f0f3ff; }
+  .btn-submit {
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    border-radius: 12px;
+    color: #fff;
+    font-size: 17px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+  }
+  .btn-submit:active { transform: scale(0.97); }
+  .btn-submit:disabled { opacity: 0.6; transform: none; }
+  .history-list {
+    max-height: 300px;
+    overflow-y: auto;
+  }
+  .history-item {
+    padding: 12px;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 13px;
+  }
+  .history-item:last-child { border-bottom: none; }
+  .history-item .time { color: #999; font-size: 12px; margin-bottom: 4px; }
+  .history-item .content { color: #333; }
+  .status-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .status-safe { background: #eafaf1; color: #27ae60; }
+  .status-warn { background: #fef9e7; color: #f39c12; }
+  .status-danger { background: #fdedec; color: #e74c3c; }
+  .toast {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 12px 24px;
+    border-radius: 10px;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 500;
+    z-index: 999;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; }
+  .toast.success { background: #27ae60; }
+  .toast.error { background: #e74c3c; }
+  .empty-state { text-align: center; color: #bbb; padding: 30px 0; font-size: 14px; }
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<div class="container">
+  <div class="header">
+    <h1>泰国出行报备</h1>
+    <p>每次移动或状态变化请及时报备</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📝 本次报备</div>
+
+    <div class="form-group">
+      <label>当前位置 <span class="required">*</span></label>
+      <input type="text" id="location" placeholder="如：曼谷暹罗广场" maxlength="100">
+      <div class="location-btns">
+        <button class="btn-outline" onclick="getLocation()">自动获取位置</button>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>当前状态 <span class="required">*</span></label>
+      <div class="radio-group">
+        <div class="radio-item safe">
+          <input type="radio" name="status" id="safe" value="安全" checked>
+          <label for="safe">安全</label>
+        </div>
+        <div class="radio-item warn">
+          <input type="radio" name="status" id="warn" value="需留意">
+          <label for="warn">需留意</label>
+        </div>
+        <div class="radio-item danger">
+          <input type="radio" name="status" id="danger" value="求助">
+          <label for="danger">求助</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>备注</label>
+      <textarea id="remark" placeholder="补充说明，如：刚吃完饭准备回酒店、遇到奇怪的人跟着等" maxlength="300"></textarea>
+    </div>
+
+    <button class="btn-submit" id="submitBtn" onclick="submitReport()">发送报备</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📋 报备记录</div>
+    <div class="history-list" id="historyList">
+      <div class="empty-state">暂无报备记录</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const TOKEN = 'fd7f9d489507418bab7910cbac0c02ce';
+const STORAGE_KEY = 'thai_checkin_history';
+
+function getLocation() {
+  if (!navigator.geolocation) {
+    showToast('浏览器不支持定位', 'error');
+    return;
+  }
+  const btn = document.querySelector('.location-btns .btn-outline');
+  btn.textContent = '获取中...';
+  btn.disabled = true;
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      const lat = pos.coords.latitude.toFixed(6);
+      const lng = pos.coords.longitude.toFixed(6);
+      document.getElementById('location').value = `坐标: ${lat}, ${lng}`;
+      btn.textContent = '自动获取位置';
+      btn.disabled = false;
+      showToast('已获取位置坐标', 'success');
+    },
+    err => {
+      btn.textContent = '自动获取位置';
+      btn.disabled = false;
+      showToast('定位失败，请手动输入', 'error');
+    }
+  );
+}
+
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast ' + type + ' show';
+  setTimeout(() => t.className = 'toast', 2000);
+}
+
+function getStatusBadge(status) {
+  if (status === '安全') return '<span class="status-badge status-safe">安全</span>';
+  if (status === '需留意') return '<span class="status-badge status-warn">需留意</span>';
+  return '<span class="status-badge status-danger">求助</span>';
+}
+
+function loadHistory() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  const list = raw ? JSON.parse(raw) : [];
+  renderHistory(list);
+}
+
+function renderHistory(list) {
+  const container = document.getElementById('historyList');
+  if (list.length === 0) {
+    container.innerHTML = '<div class="empty-state">暂无报备记录</div>';
+    return;
+  }
+  container.innerHTML = list.slice().reverse().map(item => `
+    <div class="history-item">
+      <div class="time">${item.time}</div>
+      <div class="content">${getStatusBadge(item.status)} ${item.location}${item.remark ? ' · ' + item.remark : ''}</div>
+    </div>
+  `).join('');
+}
+
+async function submitReport() {
+  const location = document.getElementById('location').value.trim();
+  const status = document.querySelector('input[name="status"]:checked')?.value;
+  const remark = document.getElementById('remark').value.trim();
+
+  if (!location) { showToast('请填写当前位置', 'error'); return; }
+  if (!status) { showToast('请选择当前状态', 'error'); return; }
+
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.textContent = '发送中...';
+
+  const now = new Date();
+  const timeStr = now.toLocaleString('zh-CN', { timeZone: 'Asia/Bangkok', hour12: false });
+  const beijingTime = now.toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false });
+
+  const title = status === '求助' ? '【紧急】泰国报备 - 求助！' : `泰国报备 - ${status}`;
+  const content = `
+    <div style="padding:10px;font-size:15px;">
+      <p style="font-size:18px;font-weight:bold;margin-bottom:12px;">${status === '求助' ? '🔴 紧急求助' : status === '需留意' ? '🟡 需留意' : '🟢 一切安全'}</p>
+      <p><b>位置：</b>${escapeHtml(location)}</p>
+      <p><b>状态：</b>${status}</p>
+      ${remark ? `<p><b>备注：</b>${escapeHtml(remark)}</p>` : ''}
+      <p style="color:#999;font-size:12px;margin-top:12px;">曼谷时间：${timeStr}<br>北京时间：${beijingTime}</p>
+    </div>
+  `;
+
+  try {
+    const resp = await fetch('https://www.pushplus.plus/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        token: TOKEN,
+        title: title,
+        content: content,
+        template: 'html'
+      })
+    });
+    const result = await resp.json();
+    if (result.code === 200) {
+      showToast('报备已发送至微信', 'success');
+      saveHistory(location, status, remark, timeStr);
+
+      // 清空备注（保留位置方便连续报备）
+      document.getElementById('remark').value = '';
+    } else {
+      showToast('发送失败: ' + (result.msg || '未知错误'), 'error');
+    }
+  } catch (e) {
+    showToast('网络错误，请重试', 'error');
+  }
+
+  btn.disabled = false;
+  btn.textContent = '发送报备';
+}
+
+function saveHistory(location, status, remark, time) {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  const list = raw ? JSON.parse(raw) : [];
+  list.push({ location, status, remark, time });
+  if (list.length > 50) list.shift();
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+  renderHistory(list);
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+loadHistory();
+</script>
+</body>
+</html>
