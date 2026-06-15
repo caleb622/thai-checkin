@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>平安报备 · 泰国</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{--pink:#e84393;--green:#00b894;--yellow:#fdcb6e;--red:#d63031;--bg:#f8f9fa;--card:#fff}
@@ -150,6 +151,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 <div id="tab-map" class="tab-content">
   <div style="text-align:center;padding:12px 0 8px"><h2 style="font-size:20px;color:var(--pink)">🗺️ 安全轨迹</h2></div>
   <div id="map"></div>
+  <div style="text-align:center;margin-bottom:12px">
+    <button class="btn btn-pink btn-sm" onclick="captureMap()">📸 轨迹截图发微信</button>
+  </div>
   <div class="card">
     <div class="card-title">📋 报备时间线</div>
     <div id="timelineList"><div class="empty">暂无报备记录</div></div>
@@ -352,6 +356,24 @@ function renderTimeline(data){
       <button class="del-btn" onclick="delRecord('${d.id}')">✕</button>
     </div>`
   }).join('')
+}
+
+async function captureMap(){
+  if(!map){showToast('地图未加载','error');return}
+  const btn=event.target;btn.disabled=true;btn.textContent='截图中...';
+  try{
+    const canvas=await html2canvas($('map'),{useCORS:true,backgroundColor:'#f8f9fa'});
+    const img=canvas.toDataURL('image/png');
+    const content=`<div style="padding:8px;text-align:center">
+      <div style="font-size:15px;font-weight:bold;color:#e84393;margin-bottom:8px;">🗺️ 安全轨迹</div>
+      <img src="${img}" style="width:100%;border-radius:10px">
+      <div style="font-size:11px;color:#999;margin-top:6px">${new Date().toLocaleString('zh-CN',{timeZone:'Asia/Bangkok'})} (曼谷时间)</div>
+    </div>`;
+    const resp=await fetch('https://www.pushplus.plus/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:PUSHPLUS_TOKEN,title:'🗺️ 安全轨迹',content,template:'html'})});
+    const r=await resp.json();
+    if(r.code===200){showToast('轨迹截图已发送','success')}else{showToast('发送失败: '+r.msg,'error')}
+  }catch(e){showToast('截图失败','error')}
+  btn.disabled=false;btn.textContent='📸 轨迹截图发微信'
 }
 
 function delRecord(id){
