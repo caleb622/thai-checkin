@@ -261,6 +261,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
     <div class="card-title">🏅 旅行徽章</div>
     <div class="badge-grid" id="badgeGrid">加载中...</div>
   </div>
+  <div class="card">
+    <div class="card-title">🌙 自动日报</div>
+    <div style="font-size:13px;color:#666;margin-bottom:8px">开启后每天凌晨自动发送当日报告+轨迹截图</div>
+    <button class="btn btn-outline btn-sm" style="width:100%" id="autoReportBtn" onclick="toggleAutoReport()">🔔 开启自动日报</button>
+  </div>
+  <div class="card">
+    <div class="card-title">⚡ 安全保险丝</div>
+    <div style="font-size:13px;color:#666;margin-bottom:8px">游玩时段(8:00-22:00)内超5小时未报备，自动微信提醒</div>
+    <div style="font-size:12px;color:#999">后台静默运行·无需手动开启</div>
+  </div>
 </div>
 
 <div class="tab-bar">
@@ -409,7 +419,7 @@ async function captureMap(){
   const btn=event.target;btn.disabled=true;btn.textContent='截图中...';
   try{
     const canvas=await html2canvas($('map'),{useCORS:true,backgroundColor:'#f8f9fa'});
-    const img=canvas.toDataURL('image/png');
+    const img=canvas.toDataURL('image/jpeg',0.5);
     const content=`<div style="padding:8px;text-align:center">
       <div style="font-size:15px;font-weight:bold;color:#e84393;margin-bottom:8px;">🗺️ 安全轨迹</div>
       <img src="${img}" style="width:100%;border-radius:10px">
@@ -465,8 +475,8 @@ async function generateTravelDiary(){
     </div>`;
 
   try{
-    const c=await html2canvas(canvas.querySelector('.diary-page'),{useCORS:true,backgroundColor:'#fff',scale:2});
-    diaryImageData=c.toDataURL('image/png');
+    const c=await html2canvas(canvas.querySelector('.diary-page'),{useCORS:true,backgroundColor:'#fff',scale:1});
+    diaryImageData=c.toDataURL('image/jpeg',0.6);
     $('diaryPreview').src=diaryImageData;
     $('diaryModal').style.display='flex';
   }catch(e){showToast('生成失败','error')}
@@ -576,6 +586,76 @@ function toggleReminder(){
   })
 }
 
+let autoReportTimer=null;
+const AUTO_KEY='thai_checkin_auto_report';
+
+function initAutoReport(){
+  const saved=localStorage.getItem(AUTO_KEY);
+  if(saved==='on'){$('autoReportBtn').textContent='🔕 关闭自动日报';startAutoReport()}
+}
+
+function toggleAutoReport(){
+  if(autoReportTimer){clearInterval(autoReportTimer);autoReportTimer=null;$('autoReportBtn').textContent='🔔 开启自动日报';localStorage.removeItem(AUTO_KEY);showToast('自动日报已关闭','success');return}
+  localStorage.setItem(AUTO_KEY,'on');
+  $('autoReportBtn').textContent='🔕 关闭自动日报';
+  showToast('已开启，每天凌晨自动发送','success');
+  startAutoReport()
+}
+
+function startAutoReport(){
+  const check=()=>{
+    const now=new Date();const h=now.getHours(),m=now.getMinutes();
+    if(h===0&&m===0){
+      const today=now.toISOString().slice(0,10);
+      if(localStorage.getItem('auto_sent_'+today))return;
+      localStorage.setItem('auto_sent_'+today,'1');
+      doAutoReport()
+    }
+  };
+  check();
+  autoReportTimer=setInterval(check,60000)
+}
+
+async function doAutoReport(){
+  const data=getData();if(data.length===0)return;
+  const today=data.filter(r=>r.date===new Date().toISOString().slice(0,10));
+  if(today.length===0)return;
+  const t=generateReportText(today);
+  const reportHtml=`<div style="padding:8px;font-size:13px;white-space:pre-wrap;line-height:1.6">${t}</div>`;
+  try{
+    await fetch('https://www.pushplus.plus/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:PUSHPLUS_TOKEN,title:'📋 每日平安报备',content:reportHtml,template:'html'})});
+    switchTab('track');
+    await new Promise(r=>setTimeout(r,1500));
+    const canvas=await html2canvas($('map'),{useCORS:true,backgroundColor:'#f8f9fa'});
+    const img=canvas.toDataURL('image/jpeg',0.5);
+    const mapHtml=`<div style="padding:8px;text-align:center"><div style="font-size:15px;font-weight:bold;color:#e84393;margin-bottom:8px;">🗺️ 今日轨迹</div><img src="${img}" style="width:100%;border-radius:10px"></div>`;
+    await fetch('https://www.pushplus.plus/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:PUSHPLUS_TOKEN,title:'🗺️ 今日轨迹',content:mapHtml,template:'html'})});
+    saveData([]);
+    refreshAll()
+  }catch(e){console.error('自动日报失败',e)}
+}
+
+let fuseTimer=null,fuseLastAlert='';
+const FUSE_HOURS=5,FUSE_START=8,FUSE_END=22;
+
+function initFuse(){
+  const check=()=>{
+    const now=new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Bangkok'}));
+    const h=now.getHours();
+    if(h<FUSE_START||h>=FUSE_END)return;
+    const data=getData();if(data.length===0)return;
+    const last=new Date(data[data.length-1].time);
+    const gap=(now-last)/3600000;
+    if(gap>=FUSE_HOURS){
+      const key=last.toISOString();
+      if(fuseLastAlert===key)return;fuseLastAlert=key;
+      const fuseHtml=`<div style="padding:12px;text-align:center;font-size:14px;color:#e74c3c"><b>⚠️ 安全保险丝触发</b><br><br>上次报备: ${last.toLocaleString('zh-CN',{timeZone:'Asia/Bangkok'})}<br>已超${Math.floor(gap)}小时未报备<br><br>请尽快确认安全</div>`;
+      fetch('https://www.pushplus.plus/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:PUSHPLUS_TOKEN,title:'⚠️ 超时未报备提醒',content:fuseHtml,template:'html'})}).catch(()=>{})
+    }
+  };
+  check();fuseTimer=setInterval(check,120000)
+}
+
 async function loadWeather(){
   try{
     const cities=[{name:'曼谷',lat:13.7563,lon:100.5018},{name:'普吉',lat:7.8804,lon:98.3923},{name:'清迈',lat:18.7883,lon:98.9853}];
@@ -643,7 +723,7 @@ function refreshBadges(){
 
 function refreshAll(){const data=getData();renderTimeline(data);if(map)initMap();refreshStats();refreshBadges()}
 
-loadWeather();refreshAll();
+loadWeather();refreshAll();initAutoReport();initFuse();
 </script>
 </body>
 </html>
