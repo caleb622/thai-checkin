@@ -168,6 +168,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
     <div style="display:flex;gap:8px;margin-top:10px">
       <button class="btn btn-outline btn-sm" style="flex:1" onclick="generateReport()">生成报告</button>
       <button class="btn btn-outline btn-sm" style="flex:1" onclick="copyReport()">📋 复制报告</button>
+      <button class="btn btn-pink btn-sm" style="flex:1" onclick="sendReport()">📨 发微信</button>
     </div>
   </div>
   <div class="card">
@@ -402,7 +403,24 @@ ${latest.remark?`💬 备注：${latest.remark}`:''}
 
 async function copyReport(){
   const text=$('reportBox').textContent;
+  if(!text||text==='暂无数据'){showToast('请先生成报告','error');return}
   try{await navigator.clipboard.writeText(text);showToast('已复制到剪贴板','success')}catch(e){showToast('复制失败','error')}
+}
+
+async function sendReport(){
+  const text=$('reportBox').textContent;
+  if(!text||text==='暂无数据'){showToast('请先生成报告','error');return}
+  const btn=event.target;btn.disabled=true;btn.textContent='发送中...';
+  const content=`<div style="padding:12px;font-size:14px;font-family:-apple-system,sans-serif;">
+    <div style="font-size:16px;font-weight:bold;color:#e84393;margin-bottom:10px;">📊 泰国出行安全报告</div>
+    <div style="background:#fff5f7;border-radius:10px;padding:12px;line-height:1.8;white-space:pre-wrap;font-family:monospace;font-size:13px;">${text}</div>
+  </div>`;
+  try{
+    const resp=await fetch('https://www.pushplus.plus/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:PUSHPLUS_TOKEN,title:'📊 安全报告',content,template:'html'})});
+    const r=await resp.json();
+    if(r.code===200){showToast('报告已发送','success')}else{showToast('发送失败: '+r.msg,'error')}
+  }catch(e){showToast('网络错误','error')}
+  btn.disabled=false;btn.textContent='📨 发微信'
 }
 
 function exportData(){
