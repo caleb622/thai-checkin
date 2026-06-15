@@ -227,10 +227,10 @@ function getGPS(){
     const lng=p.coords.longitude.toFixed(6);
     $('lat').value=lat;$('lng').value=lng;
     try{
-      const r=await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&accept-language=zh`);
+      const r=await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=zh`);
       const j=await r.json();
-      if(j.display_name){
-        $('locDesc').value=j.display_name;
+      if(j.locality||j.city||j.principalSubdivision){
+        $('locDesc').value=[j.locality,j.city,j.principalSubdivision,j.countryName].filter(Boolean).join('，');
         showToast('已获取坐标和地址','success')
       }else{showToast('已获取坐标','success')}
     }catch(e){showToast('已获取坐标（地址获取失败）','success')}
