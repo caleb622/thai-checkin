@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>平安报备 · 泰国</title>
+<title>✨ 平安出行报备</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
@@ -147,7 +147,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 </div>
 
 <div id="tab-report" class="tab-content active">
-  <div style="text-align:center;padding:12px 0 8px"><h2 style="font-size:20px;color:var(--pink)">🛡️ 平安报备 · 泰国</h2></div>
+  <div style="text-align:center;padding:12px 0 8px"><h2 style="font-size:20px;color:var(--pink)" id="pageTitle">🛡️ 平安出行报备</h2></div>
   <div class="card">
     <div class="card-title">📍 当前位置</div>
     <div class="form-group">
@@ -224,6 +224,23 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 
 <div id="tab-more" class="tab-content">
   <div style="text-align:center;padding:12px 0 8px"><h2 style="font-size:20px;color:var(--pink)">⚡ 更多工具</h2></div>
+
+  <div class="card">
+    <div class="card-title">⚙ 出行设置</div>
+    <div style="display:flex;flex-direction:column;gap:8px;font-size:13px">
+      <div style="display:flex;gap:6px;align-items:center"><span style="width:60px;color:#666">目的地</span><input id="setCountry" style="flex:1;padding:6px 8px;border:1px solid #ddd;border-radius:6px" placeholder="如: 泰国"></div>
+      <div style="display:flex;gap:6px;align-items:center"><span style="width:60px;color:#666">时区</span><select id="setTZ" style="flex:1;padding:6px 8px;border:1px solid #ddd;border-radius:6px">
+        <option value="Asia/Bangkok">曼谷 UTC+7</option><option value="Asia/Tokyo">东京 UTC+9</option><option value="Asia/Seoul">首尔 UTC+9</option><option value="Asia/Singapore">新加坡 UTC+8</option><option value="Asia/Dubai">迪拜 UTC+4</option>
+        <option value="Europe/Paris">巴黎 UTC+2</option><option value="Europe/London">伦敦 UTC+1</option><option value="Europe/Rome">罗马 UTC+2</option><option value="America/New_York">纽约 UTC-4</option><option value="America/Los_Angeles">洛杉矶 UTC-7</option>
+        <option value="Pacific/Auckland">奥克兰 UTC+12</option><option value="Australia/Sydney">悉尼 UTC+10</option>
+      </select></div>
+      <div style="display:flex;gap:6px;align-items:center"><span style="width:60px;color:#666">开始日期</span><input id="setStart" type="date" style="flex:1;padding:6px 8px;border:1px solid #ddd;border-radius:6px"></div>
+      <div style="display:flex;gap:6px;align-items:center"><span style="width:60px;color:#666">结束日期</span><input id="setEnd" type="date" style="flex:1;padding:6px 8px;border:1px solid #ddd;border-radius:6px"></div>
+      <div style="display:flex;gap:6px;align-items:center"><span style="width:60px;color:#666">关注城市</span><input id="setCities" style="flex:1;padding:6px 8px;border:1px solid #ddd;border-radius:6px" placeholder="曼谷,普吉,清迈"></div>
+      <button class="btn btn-pink btn-sm" style="width:100%" onclick="applySettings()">💾 保存设置</button>
+    </div>
+  </div>
+
   <div class="card">
     <div class="card-title">🏛 中国驻泰使领馆</div>
     <div class="info-item"><div class="title">驻曼谷大使馆</div><div class="detail">📍 57 Ratchadaphisek Rd, Din Daeng<br>📞 +66 2-245-0088</div><button class="btn btn-outline btn-sm" style="margin-top:4px" onclick="window.open('tel:+6622450088')">📞 拨打</button></div>
@@ -232,7 +249,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
     <div class="info-item"><div class="title">驻孔敬总领馆</div><div class="detail">📍 142/44 Moo 2, Rob-Bueng Rd<br>📞 +66 43-226873</div><button class="btn btn-outline btn-sm" style="margin-top:4px" onclick="window.open('tel:+6643226873')">📞 拨打</button></div>
   </div>
   <div class="card">
-    <div class="card-title">🚨 泰国紧急电话</div>
+    <div class="card-title" id="emergencyTitle">🚨 本地紧急电话</div>
     <div class="info-item"><div class="title">旅游警察</div><div class="detail">📞 1155（24小时，中/英/泰）</div><button class="btn btn-outline btn-sm" style="margin-top:4px" onclick="window.open('tel:1155')">📞 拨打</button></div>
     <div class="info-item"><div class="title">外交部全球热线</div><div class="detail">📞 +86-10-12308</div><button class="btn btn-outline btn-sm" style="margin-top:4px" onclick="window.open('tel:+861012308')">📞 拨打</button></div>
     <div class="info-item"><div class="title">急救</div><div class="detail">📞 1669</div><button class="btn btn-outline btn-sm" style="margin-top:4px" onclick="window.open('tel:1669')">📞 拨打</button></div>
@@ -268,6 +285,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 <script>
 const PUSHPLUS_TOKEN='fd7f9d489507418bab7910cbac0c02ce';
 const STORAGE_KEY='thai_checkin_v2';
+const SETTINGS_KEY='travel_settings_v1';
+const DEFAULT_SETTINGS={country:'泰国',timezone:'Asia/Bangkok',startDate:'',endDate:'',cities:'曼谷,普吉,清迈'};
+function getSettings(){try{const s=JSON.parse(localStorage.getItem(SETTINGS_KEY));return{...DEFAULT_SETTINGS,...s}}catch(e){return{...DEFAULT_SETTINGS}}}
+function saveSettings(s){localStorage.setItem(SETTINGS_KEY,JSON.stringify({...getSettings(),...s}))}
+function isTripActive(){const s=getSettings();if(!s.startDate||!s.endDate)return true;const n=new Date(new Date().toLocaleString('en-US',{timeZone:s.timezone}));return n>=new Date(s.startDate+'T00:00:00')&&n<=new Date(s.endDate+'T23:59:59')}
+function getCountryName(){return getSettings().country}
+function getTimezone(){return getSettings().timezone}
+function getTimeLabel(){return getSettings().country+'时间'}
+
 let map=null,markers=[],polyline=null,photoData=null;
 
 function $(id){return document.getElementById(id)}
@@ -349,7 +375,7 @@ async function submitReport(){
         <p style="margin:0 0 4px"><b>💭</b> ${status}</p>
         ${remark?`<p style="margin:0"><b>💬</b> ${remark}</p>`:''}
       </div>
-      <p style="color:#999;font-size:11px;margin-top:8px">${new Date(record.time).toLocaleString('zh-CN',{timeZone:'Asia/Bangkok'})} (曼谷时间)</p>
+      <p style="color:#999;font-size:11px;margin-top:8px">${new Date(record.time).toLocaleString('zh-CN',{timeZone:getTimezone()})} (曼谷时间)</p>
     </div>`;
   try{
     const resp=await fetch('https://www.pushplus.plus/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:PUSHPLUS_TOKEN,title,content,template:'html'})});
@@ -374,7 +400,7 @@ function initMap(){
     const latlng=[parseFloat(d.lat),parseFloat(d.lng)];
     coords.push(latlng);
     const m=L.circleMarker(latlng,{radius:8,fillColor:colors[d.status],color:'#fff',weight:2,fillOpacity:.9})
-      .bindPopup(`<b>${d.loc}</b><br>${d.status} · ${new Date(d.time).toLocaleString('zh-CN',{timeZone:'Asia/Bangkok'})}`)
+      .bindPopup(`<b>${d.loc}</b><br>${d.status} · ${new Date(d.time).toLocaleString('zh-CN',{timeZone:getTimezone()})}`)
       .addTo(map);
     markers.push(m)
   });
@@ -388,7 +414,7 @@ function renderTimeline(data){
   c.innerHTML=data.slice().reverse().map((d,i)=>{
     const cls=d.status==='安全'?'safe':d.status==='注意'?'warn':'danger';
     return `<div class="timeline-item ${cls}">
-      <div class="ts">${new Date(d.time).toLocaleString('zh-CN',{timeZone:'Asia/Bangkok'})}</div>
+      <div class="ts">${new Date(d.time).toLocaleString('zh-CN',{timeZone:getTimezone()})}</div>
       <div class="loc">${d.status==='紧急'?'🔴':d.status==='注意'?'🟡':'🟢'} ${d.loc}</div>
       ${d.lat&&d.lng?`<div style="font-size:11px;color:#aaa">${d.lat}, ${d.lng}</div>`:''}
       ${d.remark?`<div class="rmk">${d.remark}</div>`:''}
@@ -407,7 +433,7 @@ async function captureMap(){
     const content=`<div style="padding:8px;text-align:center">
       <div style="font-size:15px;font-weight:bold;color:#e84393;margin-bottom:8px;">🗺️ 安全轨迹</div>
       <img src="${img}" style="width:100%;border-radius:10px">
-      <div style="font-size:11px;color:#999;margin-top:6px">${new Date().toLocaleString('zh-CN',{timeZone:'Asia/Bangkok'})} (曼谷时间)</div>
+      <div style="font-size:11px;color:#999;margin-top:6px">${new Date().toLocaleString('zh-CN',{timeZone:getTimezone()})} (曼谷时间)</div>
     </div>`;
     const resp=await fetch('https://www.pushplus.plus/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:PUSHPLUS_TOKEN,title:'🗺️ 安全轨迹',content,template:'html'})});
     const r=await resp.json();
@@ -425,7 +451,7 @@ async function generateTravelDiary(){
 
   const grouped={};
   data.forEach(d=>{
-    const date=new Date(d.time).toLocaleDateString('zh-CN',{timeZone:'Asia/Bangkok'});
+    const date=new Date(d.time).toLocaleDateString('zh-CN',{timeZone:getTimezone()});
     if(!grouped[date])grouped[date]=[];
     grouped[date].push(d);
   });
@@ -438,7 +464,7 @@ async function generateTravelDiary(){
   canvas.innerHTML=`
     <div class="diary-page">
       <div class="diary-title">
-        <h2>🇹🇭 泰国旅行日记</h2>
+        <h2>✈️ ${getCountryName()}旅行日记</h2>
         <div class="sub">${from} ~ ${to} · 共 ${data.length} 条记录</div>
       </div>
       ${dates.map(date=>{
@@ -455,7 +481,7 @@ async function generateTravelDiary(){
             </div>
           </div>`).join('')}`;
       }).join('')}
-      <div class="diary-footer">🛡️ 平安报备 · ${new Date().toLocaleString('zh-CN',{timeZone:'Asia/Bangkok'})}</div>
+      <div class="diary-footer">🛡️ 平安报备 · ${new Date().toLocaleString('zh-CN',{timeZone:getTimezone()})}</div>
     </div>`;
 
   try{
@@ -471,7 +497,7 @@ async function sendDiaryToWechat(){
   if(!diaryImageData){showToast('先生成长图','error');return}
   const content=`<div style="text-align:center;padding:4px"><img src="${diaryImageData}" style="width:100%;border-radius:12px"></div>`;
   try{
-    const resp=await fetch('https://www.pushplus.plus/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:PUSHPLUS_TOKEN,title:'🇹🇭 泰国旅行日记',content,template:'html'})});
+    const resp=await fetch('https://www.pushplus.plus/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:PUSHPLUS_TOKEN,title:'🇹🇭 '+getCountryName()+'旅行日记',content,template:'html'})});
     const r=await resp.json();
     if(r.code===200){showToast('已发送到微信','success')}else{showToast('发送失败: '+r.msg,'error')}
   }catch(e){showToast('网络错误','error')}
@@ -512,10 +538,10 @@ function generateReport(){
   const danger=data.filter(d=>d.status==='紧急').length;
   const latest=data[data.length-1];
   const ts=data.map(d=>new Date(d.time).getTime());
-  const from=new Date(Math.min(...ts)).toLocaleDateString('zh-CN',{timeZone:'Asia/Bangkok'});
-  const to=new Date(Math.max(...ts)).toLocaleDateString('zh-CN',{timeZone:'Asia/Bangkok'});
+  const from=new Date(Math.min(...ts)).toLocaleDateString('zh-CN',{timeZone:getTimezone()});
+  const to=new Date(Math.max(...ts)).toLocaleDateString('zh-CN',{timeZone:getTimezone()});
   const days=Math.max(1,Math.ceil((Math.max(...ts)-Math.min(...ts))/86400000));
-  const report=`【泰国出行安全报告】
+  const report=`【${getCountryName()}出行安全报告】
 ━━━━━━━━━━━━━━
 📅 时间范围：${from} ~ ${to}（共${days}天）
 📊 报备总数：${total} 次
@@ -525,7 +551,7 @@ function generateReport(){
 ━━━━━━━━━━━━━━
 📍 最新位置：${latest.loc}
 💭 最新状态：${latest.status}
-🕐 更新时间：${new Date(latest.time).toLocaleString('zh-CN',{timeZone:'Asia/Bangkok'})}
+🕐 更新时间：${new Date(latest.time).toLocaleString('zh-CN',{timeZone:getTimezone()})}
 ${latest.remark?`💬 备注：${latest.remark}`:''}
 ━━━━━━━━━━━━━━`;
   $('reportBox').textContent=report
@@ -542,7 +568,7 @@ async function sendReport(){
   if(!text||text==='暂无数据'){showToast('请先生成报告','error');return}
   const btn=event.target;btn.disabled=true;btn.textContent='发送中...';
   const content=`<div style="padding:12px;font-size:14px;font-family:-apple-system,sans-serif;">
-    <div style="font-size:16px;font-weight:bold;color:#e84393;margin-bottom:10px;">📊 泰国出行安全报告</div>
+    <div style="font-size:16px;font-weight:bold;color:#e84393;margin-bottom:10px;">📊 ${getCountryName()}出行安全报告</div>
     <div style="background:#fff5f7;border-radius:10px;padding:12px;line-height:1.8;white-space:pre-wrap;font-family:monospace;font-size:13px;">${text}</div>
   </div>`;
   try{
@@ -580,6 +606,7 @@ function toggleAutoReport(){
 
 function startAutoReport(){
   const check=()=>{
+    if(!isTripActive())return;
     const now=new Date();const h=now.getHours(),m=now.getMinutes();
     if(h===0&&m===0){
       const today=now.toISOString().slice(0,10);
@@ -616,7 +643,8 @@ const FUSE_HOURS=5,FUSE_START=8,FUSE_END=22;
 
 function initFuse(){
   const check=()=>{
-    const now=new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Bangkok'}));
+    if(!isTripActive())return;
+    const now=new Date(new Date().toLocaleString('en-US',{timeZone:getTimezone()}));
     const h=now.getHours();
     if(h<FUSE_START||h>=FUSE_END)return;
     const data=getData();if(data.length===0)return;
@@ -625,16 +653,41 @@ function initFuse(){
     if(gap>=FUSE_HOURS){
       const key=last.toISOString();
       if(fuseLastAlert===key)return;fuseLastAlert=key;
-      const fuseHtml=`<div style="padding:12px;text-align:center;font-size:14px;color:#e74c3c"><b>⚠️ 安全保险丝触发</b><br><br>上次报备: ${last.toLocaleString('zh-CN',{timeZone:'Asia/Bangkok'})}<br>已超${Math.floor(gap)}小时未报备<br><br>请尽快确认安全</div>`;
+      const fuseHtml=`<div style="padding:12px;text-align:center;font-size:14px;color:#e74c3c"><b>⚠️ 安全保险丝触发</b><br><br>上次报备: ${last.toLocaleString('zh-CN',{timeZone:getTimezone()})}<br>已超${Math.floor(gap)}小时未报备<br><br>请尽快确认安全</div>`;
       fetch('https://www.pushplus.plus/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:PUSHPLUS_TOKEN,title:'⚠️ 超时未报备提醒',content:fuseHtml,template:'html'})}).catch(()=>{})
     }
   };
   check();fuseTimer=setInterval(check,120000)
 }
 
+
+function applySettings(){
+  const s={country:$('setCountry').value.trim(),timezone:$('setTZ').value,startDate:$('setStart').value,endDate:$('setEnd').value,cities:$('setCities').value.trim()};
+  if(!s.country){showToast('请输入目的地','error');return}
+  saveSettings(s);loadWeather();refreshAll();updateTitles();showToast('设置已保存','success')
+}
+function initSettings(){
+  const s=getSettings();
+  $('setCountry').value=s.country;
+  $('setTZ').value=s.timezone;
+  $('setStart').value=s.startDate;
+  $('setEnd').value=s.endDate;
+  $('setCities').value=s.cities||'';
+  updateTitles();
+}
+
+function updateTitles(){
+  const c=getCountryName();
+  if($('pageTitle'))$('pageTitle').textContent='🛡️ 平安报备 · '+c;
+  document.title='✨ 平安报备 · '+c;
+}
+
 async function loadWeather(){
   try{
-    const cities=[{name:'曼谷',lat:13.7563,lon:100.5018},{name:'普吉',lat:7.8804,lon:98.3923},{name:'清迈',lat:18.7883,lon:98.9853}];
+    const s=getSettings();
+    const cityNames=(s.cities||'曼谷,普吉,清迈').split(',').map(c=>c.trim()).filter(Boolean);
+    const defaultCities={曼谷:{lat:13.7563,lon:100.5018},普吉:{lat:7.8804,lon:98.3923},清迈:{lat:18.7883,lon:98.9853},东京:{lat:35.6762,lon:139.6503},大阪:{lat:34.6937,lon:135.5023},首尔:{lat:37.5665,lon:126.9780},新加坡:{lat:1.3521,lon:103.8198},巴黎:{lat:48.8566,lon:2.3522},伦敦:{lat:51.5074,lon:-0.1278},罗马:{lat:41.9028,lon:12.4964},纽约:{lat:40.7128,lon:-74.0060},洛杉矶:{lat:34.0522,lon:-118.2437},悉尼:{lat:-33.8688,lon:151.2093},奥克兰:{lat:-36.8485,lon:174.7633},迪拜:{lat:25.2048,lon:55.2708},巴厘岛:{lat:-8.3405,lon:115.0920},胡志明:{lat:10.8231,lon:106.6297},吉隆坡:{lat:3.1390,lon:101.6869}};
+    const cities=cityNames.map(name=>({name,lat:defaultCities[name]?.lat||13.75,lon:defaultCities[name]?.lon||100.5}));
     const html=await Promise.all(cities.map(async c=>{
       try{const r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${c.lat}&longitude=${c.lon}&current_weather=true`);const j=await r.json();
         return `<div class="weather-card"><div class="city">${c.name}</div><div class="temp">${j.current_weather.temperature}°</div><div class="desc">${j.current_weather.weathercode}码</div></div>`
@@ -645,7 +698,7 @@ async function loadWeather(){
 }
 
 const BADGES=[
-  {id:'first',icon:'🙏',name:'萨瓦迪卡',sub:'首次报备',check:d=>d.length>=1},
+  {id:'first',icon:'✈️',name:'初次出发',sub:'首次报备',check:d=>d.length>=1},
   {id:'beach',icon:'🏝️',name:'海岛探险家',sub:'到访海滩/海岛',check:d=>d.some(r=>/海滩|海岛|芭提雅|普吉|苏梅|甲米|皮皮|丽贝|沙美|涛岛|攀牙|华欣|兰塔/.test(r.loc))},
   {id:'temple',icon:'🛕',name:'佛国行者',sub:'到访寺庙/佛寺',check:d=>d.some(r=>/寺庙|佛寺|寺院|玉佛寺|卧佛寺|郑王庙|白庙|黑庙|蓝庙|双龙寺|契迪龙寺|帕辛寺|黎明寺|云石寺/.test(r.loc))},
   {id:'market',icon:'🌃',name:'夜市猎人',sub:'到访夜市/市场',check:d=>d.some(r=>/夜市|市场|水上市场|乍都乍|火车夜市|摩天轮夜市|周末市场|安帕瓦|丹嫩沙多|考山路/.test(r.loc))},
@@ -657,7 +710,7 @@ const BADGES=[
   {id:'streak3',icon:'🔥',name:'三日游',sub:'连续3天报备',check:d=>calcStreak(d)>=3},
   {id:'streak7',icon:'💎',name:'周游列国',sub:'连续7天报备',check:d=>calcStreak(d)>=7},
   {id:'count10',icon:'🎖️',name:'常旅客',sub:'累计10次报备',check:d=>d.length>=10},
-  {id:'count30',icon:'👑',name:'泰漂达人',sub:'累计30次报备',check:d=>d.length>=30},
+  {id:'count30',icon:'👑',name:'旅行达人',sub:'累计30次报备',check:d=>d.length>=30},
   {id:'safe7',icon:'🍀',name:'平安七日',sub:'连续7天状态为安全',check:d=>d.length>=7&&maxSafeStreak(d)>=7},
 ];
 
@@ -699,7 +752,7 @@ function refreshBadges(){
 
 function refreshAll(){const data=getData();renderTimeline(data);if(map)initMap();refreshStats();refreshBadges()}
 
-loadWeather();refreshAll();initAutoReport();initFuse();
+loadWeather();refreshAll();initSettings();initAutoReport();initFuse();
 </script>
 </body>
 </html>
