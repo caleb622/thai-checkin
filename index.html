@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>平安报备 · 泰国</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{--pink:#e84393;--green:#00b894;--yellow:#fdcb6e;--red:#d63031;--bg:#f8f9fa;--card:#fff}
@@ -206,7 +206,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
   <button class="tab-btn" onclick="switchTab('more')"><span class="icon">⚡</span>更多</button>
 </div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
 const PUSHPLUS_TOKEN='fd7f9d489507418bab7910cbac0c02ce';
 const STORAGE_KEY='thai_checkin_v2';
@@ -288,7 +288,7 @@ function initMap(){
   const data=getData();const withCoord=data.filter(d=>d.lat&&d.lng);
   if(!map){
     map=L.map('map').setView([13.7563,100.5018],6);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap'}).addTo(map);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap &copy; CartoDB'}).addTo(map);
   }
   markers.forEach(m=>map.removeLayer(m));markers=[];
   if(polyline){map.removeLayer(polyline);polyline=null}
