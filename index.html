@@ -161,25 +161,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 <div id="tab-more" class="tab-content">
   <div style="text-align:center;padding:12px 0 8px"><h2 style="font-size:20px;color:var(--pink)">⚡ 更多工具</h2></div>
   <div class="card">
-    <div class="card-title">🆘 紧急求助</div>
-    <div class="form-group">
-      <label>预设紧急联系人号码</label>
-      <input type="tel" id="emergencyPhone" placeholder="如 +86 13800138000">
-    </div>
-    <button class="btn btn-pink" style="margin-top:8px" onclick="smsHelp()">📱 一键短信求助</button>
-  </div>
-  <div class="card">
     <div class="card-title">🏛 中国驻泰使领馆</div>
-    <div class="info-item"><div class="title">驻曼谷大使馆</div><div class="detail">📍 57 Ratchadaphisek Rd, Din Daeng<br>📞 +66 2-245-0088</div></div>
-    <div class="info-item"><div class="title">驻清迈总领馆</div><div class="detail">📍 111 Changloh Rd, Haiya<br>📞 +66 53-280380</div></div>
-    <div class="info-item"><div class="title">驻宋卡总领馆</div><div class="detail">📍 9 Sadao Rd, Songkhla<br>📞 +66 74-322034</div></div>
-    <div class="info-item"><div class="title">驻孔敬总领馆</div><div class="detail">📍 142/44 Moo 2, Rob-Bueng Rd<br>📞 +66 43-226873</div></div>
+    <div class="info-item"><div class="title">驻曼谷大使馆</div><div class="detail">📍 57 Ratchadaphisek Rd, Din Daeng<br>📞 +66 2-245-0088</div><button class="btn btn-outline btn-sm" style="margin-top:4px" onclick="window.open('tel:+6622450088')">📞 拨打</button></div>
+    <div class="info-item"><div class="title">驻清迈总领馆</div><div class="detail">📍 111 Changloh Rd, Haiya<br>📞 +66 53-280380</div><button class="btn btn-outline btn-sm" style="margin-top:4px" onclick="window.open('tel:+6653280380')">📞 拨打</button></div>
+    <div class="info-item"><div class="title">驻宋卡总领馆</div><div class="detail">📍 9 Sadao Rd, Songkhla<br>📞 +66 74-322034</div><button class="btn btn-outline btn-sm" style="margin-top:4px" onclick="window.open('tel:+6674322034')">📞 拨打</button></div>
+    <div class="info-item"><div class="title">驻孔敬总领馆</div><div class="detail">📍 142/44 Moo 2, Rob-Bueng Rd<br>📞 +66 43-226873</div><button class="btn btn-outline btn-sm" style="margin-top:4px" onclick="window.open('tel:+6643226873')">📞 拨打</button></div>
   </div>
   <div class="card">
     <div class="card-title">🚨 泰国紧急电话</div>
-    <div class="info-item"><div class="title">旅游警察</div><div class="detail">📞 1155（24小时，中/英/泰）</div></div>
-    <div class="info-item"><div class="title">外交部全球热线</div><div class="detail">📞 +86-10-12308</div></div>
-    <div class="info-item"><div class="title">急救</div><div class="detail">📞 1669</div></div>
+    <div class="info-item"><div class="title">旅游警察</div><div class="detail">📞 1155（24小时，中/英/泰）</div><button class="btn btn-outline btn-sm" style="margin-top:4px" onclick="window.open('tel:1155')">📞 拨打</button></div>
+    <div class="info-item"><div class="title">外交部全球热线</div><div class="detail">📞 +86-10-12308</div><button class="btn btn-outline btn-sm" style="margin-top:4px" onclick="window.open('tel:+861012308')">📞 拨打</button></div>
+    <div class="info-item"><div class="title">急救</div><div class="detail">📞 1669</div><button class="btn btn-outline btn-sm" style="margin-top:4px" onclick="window.open('tel:1669')">📞 拨打</button></div>
   </div>
   <div class="card">
     <div class="card-title">🌤 主要城市天气</div>
@@ -230,10 +222,18 @@ function switchTab(name){
 
 function getGPS(){
   if(!navigator.geolocation){showToast('浏览器不支持定位','error');return}
-  navigator.geolocation.getCurrentPosition(p=>{
-    $('lat').value=p.coords.latitude.toFixed(6);
-    $('lng').value=p.coords.longitude.toFixed(6);
-    showToast('已获取坐标','success')
+  navigator.geolocation.getCurrentPosition(async p=>{
+    const lat=p.coords.latitude.toFixed(6);
+    const lng=p.coords.longitude.toFixed(6);
+    $('lat').value=lat;$('lng').value=lng;
+    try{
+      const r=await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&accept-language=zh`);
+      const j=await r.json();
+      if(j.display_name){
+        $('locDesc').value=j.display_name;
+        showToast('已获取坐标和地址','success')
+      }else{showToast('已获取坐标','success')}
+    }catch(e){showToast('已获取坐标（地址获取失败）','success')}
   },()=>showToast('定位失败，请手动输入','error'))
 }
 
@@ -399,15 +399,6 @@ function importData(e){
 
 function confirmClear(){
   if(confirm('确定清空全部报备数据？此操作不可恢复！')){saveData([]);refreshAll();showToast('已清空','success')}
-}
-
-function smsHelp(){
-  const phone=$('emergencyPhone').value.trim();
-  if(!phone){showToast('请先填写紧急联系人号码','error');return}
-  const data=getData();const latest=data.length>0?data[data.length-1]:null;
-  const locText=latest?`当前位置：${latest.loc}${latest.lat?` (${latest.lat},${latest.lng})`:''}，状态：${latest.status}`:'暂无位置信息';
-  const msg=encodeURIComponent(`【紧急求助】我在泰国需要帮助！${locText}`);
-  window.open(`sms:${phone}?body=${msg}`)
 }
 
 function toggleTip(el){el.nextElementSibling.classList.toggle('show')}
