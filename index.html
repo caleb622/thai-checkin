@@ -237,6 +237,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
       <div style="display:flex;gap:6px;align-items:center"><span style="width:60px;color:#666">开始日期</span><input id="setStart" type="date" style="flex:1;padding:6px 8px;border:1px solid #ddd;border-radius:6px"></div>
       <div style="display:flex;gap:6px;align-items:center"><span style="width:60px;color:#666">结束日期</span><input id="setEnd" type="date" style="flex:1;padding:6px 8px;border:1px solid #ddd;border-radius:6px"></div>
       <div style="display:flex;gap:6px;align-items:center"><span style="width:60px;color:#666">关注城市</span><input id="setCities" style="flex:1;padding:6px 8px;border:1px solid #ddd;border-radius:6px" placeholder="曼谷,普吉,清迈"></div>
+      <div style="display:flex;gap:6px;align-items:center"><span style="width:60px;color:#666">瓦片源</span><select id="setTileSrc" style="flex:1;padding:6px 8px;border:1px solid #ddd;border-radius:6px">
+        <option value="gaode">高德地图（国内快）</option><option value="cartodb">CartoDB（全球）</option><option value="local">本地代理（需启动脚本）</option>
+      </select></div>
       <button class="btn btn-pink btn-sm" style="width:100%" onclick="applySettings()">💾 保存设置</button>
     </div>
   </div>
@@ -286,7 +289,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 const PUSHPLUS_TOKEN='fd7f9d489507418bab7910cbac0c02ce';
 const STORAGE_KEY='thai_checkin_v2';
 const SETTINGS_KEY='travel_settings_v1';
-const DEFAULT_SETTINGS={country:'泰国',timezone:'Asia/Bangkok',startDate:'',endDate:'',cities:'曼谷,普吉,清迈'};
+const DEFAULT_SETTINGS={country:'泰国',timezone:'Asia/Bangkok',startDate:'',endDate:'',cities:'曼谷,普吉,清迈',tileSource:'gaode'};
 function getSettings(){try{const s=JSON.parse(localStorage.getItem(SETTINGS_KEY));return{...DEFAULT_SETTINGS,...s}}catch(e){return{...DEFAULT_SETTINGS}}}
 function saveSettings(s){localStorage.setItem(SETTINGS_KEY,JSON.stringify({...getSettings(),...s}))}
 function isTripActive(){const s=getSettings();if(!s.startDate||!s.endDate)return true;const n=new Date(new Date().toLocaleString('en-US',{timeZone:s.timezone}));return n>=new Date(s.startDate+'T00:00:00')&&n<=new Date(s.endDate+'T23:59:59')}
@@ -386,11 +389,42 @@ async function submitReport(){
   $('remark').value='';clearPhoto();refreshAll()
 }
 
+// ===== IndexedDB 瓦片缓存 =====
+const TileCache=(()=>{
+  let _db=null;
+  function open(){if(_db)return Promise.resolve(_db);return new Promise((resolve,reject)=>{const r=indexedDB.open('MapTileCache',1);r.onupgradeneeded=e=>e.target.result.createObjectStore('tiles');r.onsuccess=e=>{_db=e.target.result;resolve(_db)};r.onerror=reject})}
+  return{
+    async get(key){const db=await open();return new Promise(resolve=>{const t=db.transaction('tiles','readonly').objectStore('tiles').get(key);t.onsuccess=()=>resolve(t.result?t.result.blob:null);t.onerror=()=>resolve(null)})},
+    async set(key,blob){const db=await open();return new Promise(resolve=>{const t=db.transaction('tiles','readwrite').objectStore('tiles').put({blob,ts:Date.now()},key);t.onsuccess=resolve;t.onerror=()=>resolve()})}
+  }
+})();
+
+const TILE_SOURCES={
+  gaode:{url:'https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}',opts:{subdomains:['1','2','3','4'],maxZoom:18,attribution:'&copy; 高德地图'}},
+  cartodb:{url:'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',opts:{subdomains:['a','b','c','d'],maxZoom:19,attribution:'&copy; OpenStreetMap &copy; CartoDB'}},
+  local:{url:'http://localhost:8765/{z}/{x}/{y}',opts:{maxZoom:19,attribution:'&copy; 本地代理'}}
+};
+
 function initMap(){
   const data=getData();const withCoord=data.filter(d=>d.lat&&d.lng);
   if(!map){
+    const src=getSettings().tileSource||'gaode';
+    const cfg=TILE_SOURCES[src]||TILE_SOURCES.gaode;
     map=L.map('map').setView([13.7563,100.5018],6);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap &copy; CartoDB'}).addTo(map);
+    const CachedTile=L.TileLayer.extend({
+      createTile(coords,done){
+        const tile=L.DomUtil.create('img','leaflet-tile');
+        L.DomEvent.on(tile,'load',L.Util.bind(this._tileOnLoad,this,done,tile));
+        L.DomEvent.on(tile,'error',L.Util.bind(this._tileOnError,this,done,tile));
+        if(this.options.crossOrigin)tile.crossOrigin='';
+        const key=src+':'+coords.z+'/'+coords.x+'/'+coords.y;
+        const url=this.getTileUrl(coords);let settled=false;
+        TileCache.get(key).then(blob=>{if(blob&&!settled){tile.src=URL.createObjectURL(blob);settled=true}});
+        fetch(url).then(r=>{if(!r.ok)throw new Error();return r.blob()}).then(blob=>{TileCache.set(key,blob);if(!settled){tile.src=URL.createObjectURL(blob);settled=true}}).catch(()=>{if(!settled){tile.src=url;settled=true}});
+        return tile
+      }
+    });
+    new CachedTile(cfg.url,cfg.opts).addTo(map);
   }
   markers.forEach(m=>map.removeLayer(m));markers=[];
   if(polyline){map.removeLayer(polyline);polyline=null}
@@ -662,7 +696,7 @@ function initFuse(){
 
 
 function applySettings(){
-  const s={country:$('setCountry').value.trim(),timezone:$('setTZ').value,startDate:$('setStart').value,endDate:$('setEnd').value,cities:$('setCities').value.trim()};
+  const s={country:$('setCountry').value.trim(),timezone:$('setTZ').value,startDate:$('setStart').value,endDate:$('setEnd').value,cities:$('setCities').value.trim(),tileSource:$('setTileSrc').value};
   if(!s.country){showToast('请输入目的地','error');return}
   saveSettings(s);loadWeather();refreshAll();updateTitles();showToast('设置已保存','success')
 }
@@ -673,6 +707,7 @@ function initSettings(){
   $('setStart').value=s.startDate;
   $('setEnd').value=s.endDate;
   $('setCities').value=s.cities||'';
+  $('setTileSrc').value=s.tileSource||'gaode';
   updateTitles();
 }
 
