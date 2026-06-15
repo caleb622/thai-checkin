@@ -3,403 +3,441 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>平安报备</title>
+<title>平安报备 · 泰国</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background: linear-gradient(135deg, #f093fb 0%, #f5576c 50%, #ff6a88 100%);
-    min-height: 100vh;
-    padding: 16px;
-  }
-  .container { max-width: 420px; margin: 0 auto; }
-  .header {
-    text-align: center;
-    color: #fff;
-    padding: 28px 0 18px;
-  }
-  .header .icon { font-size: 48px; margin-bottom: 8px; }
-  .header h1 { font-size: 24px; margin-bottom: 4px; letter-spacing: 1px; }
-  .header p { opacity: 0.85; font-size: 13px; }
-  .card {
-    background: #fff;
-    border-radius: 20px;
-    padding: 22px 18px;
-    box-shadow: 0 8px 32px rgba(245, 87, 108, 0.25);
-    margin-bottom: 14px;
-  }
-  .card-title {
-    font-size: 16px;
-    font-weight: 700;
-    color: #f5576c;
-    margin-bottom: 16px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-  .form-group { margin-bottom: 14px; }
-  .form-group:last-child { margin-bottom: 0; }
-  .form-group label {
-    display: block;
-    font-size: 13px;
-    font-weight: 600;
-    color: #666;
-    margin-bottom: 5px;
-  }
-  .form-group label .required { color: #f5576c; }
-  .form-group input, .form-group textarea, .form-group select {
-    width: 100%;
-    padding: 12px 14px;
-    border: 2px solid #fce4ec;
-    border-radius: 12px;
-    font-size: 15px;
-    color: #333;
-    background: #fff5f7;
-    transition: all 0.2s;
-    -webkit-appearance: none;
-    font-family: inherit;
-  }
-  .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
-    outline: none;
-    border-color: #f5576c;
-    background: #fff;
-    box-shadow: 0 0 0 3px rgba(245,87,108,0.1);
-  }
-  .form-group textarea { resize: vertical; min-height: 70px; }
-  .status-cards {
-    display: flex;
-    gap: 8px;
-  }
-  .status-card {
-    flex: 1;
-    text-align: center;
-  }
-  .status-card input { display: none; }
-  .status-card label {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    padding: 14px 6px;
-    border: 2px solid #fce4ec;
-    border-radius: 14px;
-    font-size: 13px;
-    cursor: pointer;
-    transition: all 0.2s;
-    background: #fff5f7;
-    color: #999;
-    font-weight: 500;
-  }
-  .status-card .emoji { font-size: 28px; }
-  .status-card.safe input:checked + label { border-color: #4caf50; background: #e8f5e9; color: #4caf50; }
-  .status-card.warn input:checked + label { border-color: #ff9800; background: #fff3e0; color: #ff9800; }
-  .status-card.danger input:checked + label { border-color: #f44336; background: #ffebee; color: #f44336; }
-  .quick-location {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-top: 6px;
-  }
-  .quick-location button {
-    padding: 7px 12px;
-    border: 1.5px solid #fce4ec;
-    background: #fff;
-    border-radius: 20px;
-    color: #f5576c;
-    font-size: 12px;
-    cursor: pointer;
-    transition: all 0.2s;
-    white-space: nowrap;
-  }
-  .quick-location button:active { background: #fce4ec; transform: scale(0.95); }
-  .sweet-msg-toggle {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-top: 6px;
-  }
-  .toggle-switch {
-    position: relative;
-    width: 44px;
-    height: 24px;
-  }
-  .toggle-switch input { display: none; }
-  .toggle-slider {
-    position: absolute;
-    cursor: pointer;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: #ddd;
-    border-radius: 24px;
-    transition: 0.3s;
-  }
-  .toggle-slider:before {
-    content: "";
-    position: absolute;
-    height: 18px; width: 18px;
-    left: 3px; bottom: 3px;
-    background: white;
-    border-radius: 50%;
-    transition: 0.3s;
-  }
-  input:checked + .toggle-slider { background: #f5576c; }
-  input:checked + .toggle-slider:before { transform: translateX(20px); }
-  .btn-submit {
-    width: 100%;
-    padding: 15px;
-    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-    border: none;
-    border-radius: 14px;
-    color: #fff;
-    font-size: 17px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: transform 0.15s, box-shadow 0.15s;
-    box-shadow: 0 4px 16px rgba(245, 87, 108, 0.4);
-    letter-spacing: 1px;
-  }
-  .btn-submit:active { transform: scale(0.96); }
-  .btn-submit:disabled { opacity: 0.6; transform: none; }
-  .history-list { max-height: 280px; overflow-y: auto; }
-  .history-item {
-    padding: 12px 14px;
-    border-bottom: 1px solid #fce4ec;
-    font-size: 13px;
-  }
-  .history-item:last-child { border-bottom: none; }
-  .history-item .time { color: #bbb; font-size: 11px; margin-bottom: 3px; }
-  .history-item .content { color: #555; }
-  .status-badge {
-    display: inline-block;
-    padding: 2px 8px;
-    border-radius: 10px;
-    font-size: 11px;
-    font-weight: 700;
-  }
-  .status-safe { background: #e8f5e9; color: #4caf50; }
-  .status-warn { background: #fff3e0; color: #ff9800; }
-  .status-danger { background: #ffebee; color: #f44336; }
-  .toast {
-    position: fixed;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    padding: 12px 24px;
-    border-radius: 12px;
-    color: #fff;
-    font-size: 14px;
-    font-weight: 600;
-    z-index: 999;
-    opacity: 0;
-    transition: opacity 0.3s;
-    pointer-events: none;
-    text-align: center;
-    max-width: 90%;
-  }
-  .toast.show { opacity: 1; }
-  .toast.success { background: #4caf50; }
-  .toast.error { background: #f44336; }
-  .empty-state { text-align: center; color: #ccc; padding: 30px 0; font-size: 13px; }
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--pink:#e84393;--green:#00b894;--yellow:#fdcb6e;--red:#d63031;--bg:#f8f9fa;--card:#fff}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);min-height:100vh;padding-bottom:70px}
+.tab-bar{position:fixed;bottom:0;left:0;right:0;height:60px;background:#fff;display:flex;border-top:1px solid #eee;z-index:99}
+.tab-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;color:#999;cursor:pointer;transition:.2s;border:none;background:none;gap:3px}
+.tab-btn.active{color:var(--pink)}
+.tab-btn .icon{font-size:22px}
+.tab-content{display:none;padding:16px;max-width:600px;margin:0 auto}
+.tab-content.active{display:block}
+.card{background:var(--card);border-radius:14px;padding:16px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.card-title{font-size:15px;font-weight:700;color:#333;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.form-group{margin-bottom:12px}
+.form-group label{display:block;font-size:12px;font-weight:600;color:#666;margin-bottom:4px}
+.form-group input,.form-group textarea,.form-group select{width:100%;padding:10px 12px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:14px;background:#fafafa;transition:.2s;font-family:inherit}
+.form-group input:focus,.form-group textarea:focus,.form-group select:focus{outline:none;border-color:var(--pink);background:#fff}
+.form-group textarea{resize:vertical;min-height:60px}
+.btn{display:inline-block;padding:10px 18px;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;transition:.15s}
+.btn:active{transform:scale(.96)}
+.btn-pink{background:linear-gradient(135deg,#f093fb,#e84393);color:#fff;width:100%;padding:14px}
+.btn-outline{border:1.5px solid var(--pink);background:#fff;color:var(--pink)}
+.btn-sm{padding:6px 12px;font-size:12px}
+.btn-danger{background:var(--red);color:#fff}
+.status-cards{display:flex;gap:8px}
+.status-card{flex:1}
+.status-card input{display:none}
+.status-card label{display:flex;flex-direction:column;align-items:center;gap:3px;padding:12px 6px;border:2px solid #eee;border-radius:12px;font-size:12px;cursor:pointer;transition:.2s;background:#fafafa;color:#999}
+.status-card .emoji{font-size:26px}
+.status-card.safe input:checked+label{border-color:var(--green);background:#e6f9f1;color:var(--green)}
+.status-card.warn input:checked+label{border-color:var(--yellow);background:#fff9e6;color:#f39c12}
+.status-card.danger input:checked+label{border-color:var(--red);background:#ffeaea;color:var(--red)}
+.photo-upload{display:flex;align-items:center;gap:10px;margin-top:4px}
+.photo-upload img{width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid #eee}
+.photo-upload .placeholder{width:80px;height:80px;border:2px dashed #ddd;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#ccc;font-size:28px;cursor:pointer}
+#map{height:300px;border-radius:10px;margin-bottom:12px}
+.timeline-item{padding:10px 12px;border-left:3px solid #ddd;margin-bottom:8px;font-size:13px;position:relative}
+.timeline-item.safe{border-left-color:var(--green)}
+.timeline-item.warn{border-left-color:var(--yellow)}
+.timeline-item.danger{border-left-color:var(--red)}
+.timeline-item .ts{font-size:11px;color:#999;margin-bottom:3px}
+.timeline-item .loc{font-weight:600;color:#333}
+.timeline-item .rmk{color:#666;margin-top:3px}
+.timeline-item .thumb{width:40px;height:40px;object-fit:cover;border-radius:4px;margin-top:4px}
+.timeline-item .del-btn{position:absolute;right:8px;top:8px;background:none;border:none;color:#ccc;font-size:16px;cursor:pointer}
+.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.stat-box{text-align:center;padding:14px 8px;background:var(--bg);border-radius:10px}
+.stat-box .num{font-size:24px;font-weight:800;color:var(--pink)}
+.stat-box .label{font-size:11px;color:#999;margin-top:2px}
+.stat-bars{margin-bottom:12px}
+.stat-bar{display:flex;align-items:center;margin-bottom:6px;font-size:12px;gap:8px}
+.stat-bar .bar-bg{flex:1;height:16px;background:#eee;border-radius:8px;overflow:hidden}
+.stat-bar .bar-fill{height:100%;border-radius:8px;transition:.3s}
+.report-box{background:#fafafa;border-radius:10px;padding:12px;font-size:13px;line-height:1.8;white-space:pre-wrap;max-height:200px;overflow-y:auto;margin-bottom:10px}
+.info-item{padding:10px 0;border-bottom:1px solid #f0f0f0;font-size:13px;line-height:1.6}
+.info-item:last-child{border-bottom:none}
+.info-item .title{font-weight:600;color:#333}
+.info-item .detail{color:#666;font-size:12px}
+.tips-item{border:1px solid #eee;border-radius:10px;margin-bottom:8px;overflow:hidden}
+.tips-header{padding:12px;font-weight:600;font-size:14px;cursor:pointer;background:#fafafa;display:flex;justify-content:space-between}
+.tips-body{padding:12px;font-size:13px;color:#666;line-height:1.7;display:none}
+.tips-body.show{display:block}
+.toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);padding:10px 20px;border-radius:10px;color:#fff;font-size:13px;font-weight:600;z-index:999;opacity:0;transition:.3s;pointer-events:none}
+.toast.show{opacity:1}
+.toast.success{background:var(--green)}
+.toast.error{background:var(--red)}
+.weather-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.weather-card{text-align:center;padding:12px 6px;background:var(--bg);border-radius:10px;font-size:12px}
+.weather-card .city{font-weight:600;color:#333}
+.weather-card .temp{font-size:22px;font-weight:800;color:var(--pink);margin:4px 0}
+.weather-card .desc{color:#999;font-size:11px}
+.coord-row{display:flex;gap:8px}
+.coord-row input{flex:1}
+.empty{text-align:center;color:#ccc;padding:30px;font-size:13px}
+@media(min-width:768px){.tab-content{max-width:700px}}
 </style>
 </head>
 <body>
-
 <div class="toast" id="toast"></div>
 
-<div class="container">
-  <div class="header">
-    <div class="icon">🛡️</div>
-    <h1>平安报备</h1>
-    <p>到哪了跟我说一声，不然会担心</p>
-  </div>
-
+<div id="tab-report" class="tab-content active">
+  <div style="text-align:center;padding:12px 0 8px"><h2 style="font-size:20px;color:var(--pink)">🛡️ 平安报备 · 泰国</h2></div>
   <div class="card">
-    <div class="card-title">📍 你在哪</div>
-
+    <div class="card-title">📍 当前位置</div>
     <div class="form-group">
-      <label>当前地点 <span class="required">*</span></label>
-      <input type="text" id="location" placeholder="如：曼谷暹罗百丽宫、普吉芭东海滩" maxlength="100">
+      <label>地点描述</label>
+      <input type="text" id="locDesc" placeholder="如：曼谷暹罗百丽宫3楼" maxlength="100">
     </div>
-    <div class="quick-location">
-      <button onclick="setLoc('曼谷酒店')">🏨 酒店</button>
-      <button onclick="setLoc('曼谷餐厅')">🍽 餐厅</button>
-      <button onclick="setLoc('曼谷商场')">🛍 商场</button>
-      <button onclick="setLoc('曼谷景点')">📸 景点</button>
-      <button onclick="setLoc('曼谷按摩店')">💆 按摩</button>
-      <button onclick="setLoc('普吉海滩')">🏖 海滩</button>
-      <button onclick="setLoc('清迈古城')">🏯 古城</button>
-      <button onclick="setLoc('机场')">✈ 机场</button>
+    <div class="form-group">
+      <label>坐标（可选）</label>
+      <div class="coord-row">
+        <input type="text" id="lat" placeholder="纬度 如 13.7465">
+        <input type="text" id="lng" placeholder="经度 如 100.5342">
+      </div>
+      <button class="btn btn-outline btn-sm" style="margin-top:6px;width:100%" onclick="getGPS()">📡 自动获取坐标</button>
     </div>
-
-    <div class="form-group" style="margin-top:14px;">
-      <label>我的状态 <span class="required">*</span></label>
+    <div class="form-group">
+      <label>安全状态</label>
       <div class="status-cards">
-        <div class="status-card safe">
-          <input type="radio" name="status" id="safe" value="安全" checked>
-          <label for="safe"><span class="emoji">😊</span>很安全</label>
-        </div>
-        <div class="status-card warn">
-          <input type="radio" name="status" id="warn" value="需留意">
-          <label for="warn"><span class="emoji">🤔</span>需留意</label>
-        </div>
-        <div class="status-card danger">
-          <input type="radio" name="status" id="danger" value="求助">
-          <label for="danger"><span class="emoji">🆘</span>需要你</label>
-        </div>
+        <div class="status-card safe"><input type="radio" name="status" id="sSafe" value="安全" checked><label for="sSafe"><span class="emoji">😊</span>安全</label></div>
+        <div class="status-card warn"><input type="radio" name="status" id="sWarn" value="注意"><label for="sWarn"><span class="emoji">🤔</span>注意</label></div>
+        <div class="status-card danger"><input type="radio" name="status" id="sDanger" value="紧急"><label for="sDanger"><span class="emoji">🆘</span>紧急</label></div>
       </div>
     </div>
-
     <div class="form-group">
-      <label>想说点什么</label>
-      <textarea id="remark" placeholder="比如：刚吃完芒果糯米饭超好吃～" maxlength="300"></textarea>
-      <div class="sweet-msg-toggle">
-        <label class="toggle-switch">
-          <input type="checkbox" id="autoSweet" checked>
-          <span class="toggle-slider"></span>
-        </label>
-        <span style="font-size:12px;color:#999;">附加暖心话</span>
+      <label>备注</label>
+      <textarea id="remark" placeholder="补充说明……" maxlength="300"></textarea>
+    </div>
+    <div class="form-group">
+      <label>现场照片（可选）</label>
+      <div class="photo-upload">
+        <div class="placeholder" id="photoPlaceholder" onclick="document.getElementById('photoInput').click()">📷</div>
+        <img id="photoPreview" style="display:none">
+        <button class="btn btn-outline btn-sm" id="photoClear" style="display:none" onclick="clearPhoto()">移除</button>
       </div>
+      <input type="file" id="photoInput" accept="image/*" style="display:none" onchange="handlePhoto(event)">
     </div>
-
-    <button class="btn-submit" id="submitBtn" onclick="submitReport()">📨 发送报备</button>
-  </div>
-
-  <div class="card">
-    <div class="card-title">📋 报备记录</div>
-    <div class="history-list" id="historyList">
-      <div class="empty-state">还没有报备过哦</div>
-    </div>
+    <button class="btn btn-pink" id="submitBtn" onclick="submitReport()">📨 发送报备</button>
   </div>
 </div>
 
+<div id="tab-map" class="tab-content">
+  <div style="text-align:center;padding:12px 0 8px"><h2 style="font-size:20px;color:var(--pink)">🗺️ 安全轨迹</h2></div>
+  <div id="map"></div>
+  <div class="card">
+    <div class="card-title">📋 报备时间线</div>
+    <div id="timelineList"><div class="empty">暂无报备记录</div></div>
+  </div>
+</div>
+
+<div id="tab-stats" class="tab-content">
+  <div style="text-align:center;padding:12px 0 8px"><h2 style="font-size:20px;color:var(--pink)">📊 安全报告</h2></div>
+  <div class="stat-grid" id="statGrid"></div>
+  <div class="card">
+    <div class="stat-bars" id="statBars"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">📝 报告生成</div>
+    <div class="report-box" id="reportBox">暂无数据</div>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button class="btn btn-outline btn-sm" style="flex:1" onclick="generateReport()">生成报告</button>
+      <button class="btn btn-outline btn-sm" style="flex:1" onclick="copyReport()">📋 复制报告</button>
+    </div>
+  </div>
+  <div class="card">
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-outline btn-sm" style="flex:1" onclick="exportData()">📤 导出数据</button>
+      <button class="btn btn-outline btn-sm" style="flex:1" onclick="document.getElementById('importInput').click()">📥 导入数据</button>
+      <button class="btn btn-danger btn-sm" style="flex:1" onclick="confirmClear()">🗑 清空全部</button>
+    </div>
+    <input type="file" id="importInput" accept=".json" style="display:none" onchange="importData(event)">
+  </div>
+</div>
+
+<div id="tab-more" class="tab-content">
+  <div style="text-align:center;padding:12px 0 8px"><h2 style="font-size:20px;color:var(--pink)">⚡ 更多工具</h2></div>
+  <div class="card">
+    <div class="card-title">🆘 紧急求助</div>
+    <div class="form-group">
+      <label>预设紧急联系人号码</label>
+      <input type="tel" id="emergencyPhone" placeholder="如 +86 13800138000">
+    </div>
+    <button class="btn btn-pink" style="margin-top:8px" onclick="smsHelp()">📱 一键短信求助</button>
+  </div>
+  <div class="card">
+    <div class="card-title">🏛 中国驻泰使领馆</div>
+    <div class="info-item"><div class="title">驻曼谷大使馆</div><div class="detail">📍 57 Ratchadaphisek Rd, Din Daeng<br>📞 +66 2-245-0088</div></div>
+    <div class="info-item"><div class="title">驻清迈总领馆</div><div class="detail">📍 111 Changloh Rd, Haiya<br>📞 +66 53-280380</div></div>
+    <div class="info-item"><div class="title">驻宋卡总领馆</div><div class="detail">📍 9 Sadao Rd, Songkhla<br>📞 +66 74-322034</div></div>
+    <div class="info-item"><div class="title">驻孔敬总领馆</div><div class="detail">📍 142/44 Moo 2, Rob-Bueng Rd<br>📞 +66 43-226873</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">🚨 泰国紧急电话</div>
+    <div class="info-item"><div class="title">旅游警察</div><div class="detail">📞 1155（24小时，中/英/泰）</div></div>
+    <div class="info-item"><div class="title">外交部全球热线</div><div class="detail">📞 +86-10-12308</div></div>
+    <div class="info-item"><div class="title">急救</div><div class="detail">📞 1669</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">🌤 主要城市天气</div>
+    <div class="weather-grid" id="weatherGrid">加载中...</div>
+  </div>
+  <div class="card">
+    <div class="card-title">💡 安全出行小贴士</div>
+    <div class="tips-item"><div class="tips-header" onclick="toggleTip(this)">🚕 交通防骗<span>▾</span></div><div class="tips-body">乘坐出租车务必要求打表(By Meter)，突突车先谈好价格。拒绝司机推荐的珠宝店、按摩店等回扣场所。建议使用Grab/Bolt打车软件。</div></div>
+    <div class="tips-item"><div class="tips-header" onclick="toggleTip(this)">🍜 饮食安全<span>▾</span></div><div class="tips-body">选择干净卫生的餐厅，避免生食和街头不洁饮品。随身携带肠胃药。711便利店随处可见，是补充物资的好去处。</div></div>
+    <div class="tips-item"><div class="tips-header" onclick="toggleTip(this)">💰 财物安全<span>▾</span></div><div class="tips-body">护照拍照存手机，原件锁酒店保险箱。背包背前面，小心飞车抢劫。大额现金分开放，ATM取款选银行内机器。</div></div>
+    <div class="tips-item"><div class="tips-header" onclick="toggleTip(this)">📱 通讯建议<span>▾</span></div><div class="tips-body">建议购买泰国本地SIM卡(TrueMove/AIS/dtac)，机场和711均可购买。开启手机定位共享功能，保持与家人联系。</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">⏰ 定时安全提醒</div>
+    <div style="font-size:13px;color:#666;margin-bottom:8px">开启后每4小时浏览器会弹出提醒</div>
+    <button class="btn btn-outline btn-sm" style="width:100%" id="reminderBtn" onclick="toggleReminder()">🔔 开启定时提醒</button>
+  </div>
+</div>
+
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="switchTab('report')"><span class="icon">📝</span>报备</button>
+  <button class="tab-btn" onclick="switchTab('map')"><span class="icon">🗺️</span>轨迹</button>
+  <button class="tab-btn" onclick="switchTab('stats')"><span class="icon">📊</span>报告</button>
+  <button class="tab-btn" onclick="switchTab('more')"><span class="icon">⚡</span>更多</button>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-const TOKEN = 'fd7f9d489507418bab7910cbac0c02ce';
-const STORAGE_KEY = 'thai_checkin_history';
+const PUSHPLUS_TOKEN='fd7f9d489507418bab7910cbac0c02ce';
+const STORAGE_KEY='thai_checkin_v2';
+let map=null,markers=[],polyline=null,reminderTimer=null,photoData=null;
 
-const sweetMsgs = [
-  '一切顺利，别担心～',
-  '这里挺安全的，放心',
-  '刚拍了好多照片，回头给你看',
-  '天气很好，心情也不错',
-  '在吃好吃的，给你也带一份',
-  '路上遇到好心人了，这边人挺热情',
-  '今天行程很顺利',
-  '回来给你带礼物哦',
-  '这边夜景很美，下次一起来',
-  '有点累了但很开心～'
-];
+function $(id){return document.getElementById(id)}
 
-function setLoc(place) {
-  document.getElementById('location').value = place;
+function showToast(msg,type){const t=$('toast');t.textContent=msg;t.className='toast '+type+' show';setTimeout(()=>t.className='toast',2200)}
+
+function getData(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]')}catch(e){return[]}}
+function saveData(d){localStorage.setItem(STORAGE_KEY,JSON.stringify(d))}
+
+function switchTab(name){
+  document.querySelectorAll('.tab-content').forEach(e=>e.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(e=>e.classList.remove('active'));
+  $(`tab-${name}`).classList.add('active');
+  document.querySelector(`.tab-btn[onclick="switchTab('${name}')"]`).classList.add('active');
+  if(name==='map'){setTimeout(initMap,200)}
+  if(name==='stats')refreshStats()
 }
 
-function showToast(msg, type) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = 'toast ' + type + ' show';
-  setTimeout(() => t.className = 'toast', 2200);
+function getGPS(){
+  if(!navigator.geolocation){showToast('浏览器不支持定位','error');return}
+  navigator.geolocation.getCurrentPosition(p=>{
+    $('lat').value=p.coords.latitude.toFixed(6);
+    $('lng').value=p.coords.longitude.toFixed(6);
+    showToast('已获取坐标','success')
+  },()=>showToast('定位失败，请手动输入','error'))
 }
 
-function getStatusBadge(status) {
-  if (status === '安全') return '<span class="status-badge status-safe">😊 安全</span>';
-  if (status === '需留意') return '<span class="status-badge status-warn">🤔 需留意</span>';
-  return '<span class="status-badge status-danger">🆘 求助</span>';
+function handlePhoto(e){
+  const file=e.target.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(ev){
+    photoData=ev.target.result;
+    $('photoPreview').src=photoData;$('photoPreview').style.display='block';
+    $('photoPlaceholder').style.display='none';$('photoClear').style.display='inline-block'
+  };
+  reader.readAsDataURL(file)
 }
+function clearPhoto(){photoData=null;$('photoPreview').style.display='none';$('photoPlaceholder').style.display='flex';$('photoClear').style.display='none';$('photoInput').value=''}
 
-function loadHistory() {
-  const raw = localStorage.getItem(STORAGE_KEY);
-  const list = raw ? JSON.parse(raw) : [];
-  renderHistory(list);
-}
-
-function renderHistory(list) {
-  const c = document.getElementById('historyList');
-  if (list.length === 0) {
-    c.innerHTML = '<div class="empty-state">还没有报备过哦</div>';
-    return;
-  }
-  c.innerHTML = list.slice().reverse().map(i => `
-    <div class="history-item">
-      <div class="time">${i.time}</div>
-      <div class="content">${getStatusBadge(i.status)} ${i.location}${i.remark ? ' · ' + i.remark : ''}</div>
-    </div>
-  `).join('');
-}
-
-async function submitReport() {
-  const location = document.getElementById('location').value.trim();
-  const status = document.querySelector('input[name="status"]:checked')?.value;
-  let remark = document.getElementById('remark').value.trim();
-  const autoSweet = document.getElementById('autoSweet').checked;
-
-  if (!location) { showToast('请填写当前地点～', 'error'); return; }
-  if (!status) { showToast('请选择当前状态', 'error'); return; }
-
-  const btn = document.getElementById('submitBtn');
-  btn.disabled = true;
-  btn.textContent = '发送中...';
-
-  const sweet = autoSweet ? sweetMsgs[Math.floor(Math.random() * sweetMsgs.length)] : '';
-  const fullRemark = [remark, sweet].filter(Boolean).join(' | ');
-
-  const now = new Date();
-  const bkTime = now.toLocaleString('zh-CN', { timeZone: 'Asia/Bangkok', hour12: false });
-  const bjTime = now.toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false });
-
-  const statusIcon = status === '求助' ? '🔴' : status === '需留意' ? '🟡' : '🟢';
-  const title = status === '求助' ? '【紧急】需要帮助！' : `平安报备 · ${location}`;
-
-  const content = `
+async function submitReport(){
+  const loc=$('locDesc').value.trim();
+  const lat=$('lat').value.trim();
+  const lng=$('lng').value.trim();
+  const status=document.querySelector('input[name="status"]:checked')?.value;
+  const remark=$('remark').value.trim();
+  if(!loc){showToast('请填写地点描述','error');return}
+  if(!status){showToast('请选择安全状态','error');return}
+  const btn=$('submitBtn');btn.disabled=true;btn.textContent='发送中...';
+  const now=new Date();const id=now.getTime().toString(36);
+  const record={id,loc,lat:lat||null,lng:lng||null,status,remark,photo:photoData,time:now.toISOString()};
+  const data=getData();data.push(record);saveData(data);
+  const statusMap={安全:'🟢',注意:'🟡',紧急:'🔴'};
+  const title=status==='紧急'?'【紧急】需要帮助！':'平安报备 · '+loc;
+  const content=`
     <div style="padding:12px;font-size:15px;font-family:-apple-system,sans-serif;">
-      <div style="font-size:20px;font-weight:bold;margin-bottom:14px;color:#f5576c;">
-        ${statusIcon} ${status === '求助' ? '她需要帮助！' : status === '需留意' ? '她有点担心' : '她很安全'}
+      <div style="font-size:18px;font-weight:bold;margin-bottom:10px;color:#e84393;">${statusMap[status]} ${status==='紧急'?'需要帮助！':status==='注意'?'请注意':'一切平安'}</div>
+      <div style="background:#fff5f7;border-radius:10px;padding:12px;">
+        <p style="margin:0 0 4px"><b>📍</b> ${loc}</p>
+        ${lat&&lng?`<p style="margin:0 0 4px"><b>🌐</b> ${lat}, ${lng}</p>`:''}
+        <p style="margin:0 0 4px"><b>💭</b> ${status}</p>
+        ${remark?`<p style="margin:0"><b>💬</b> ${remark}</p>`:''}
       </div>
-      <div style="background:#fff5f7;border-radius:10px;padding:14px;margin-bottom:10px;">
-        <p style="margin:0 0 6px;"><b>📍 地点：</b>${escapeHtml(location)}</p>
-        <p style="margin:0 0 6px;"><b>💭 状态：</b>${status}</p>
-        ${fullRemark ? `<p style="margin:0;"><b>💬 她说：</b>${escapeHtml(fullRemark)}</p>` : ''}
-      </div>
-      <p style="color:#bbb;font-size:11px;margin:10px 0 0;">🕐 曼谷 ${bkTime} | 北京 ${bjTime}</p>
-    </div>
-  `;
+      <p style="color:#999;font-size:11px;margin-top:8px">${new Date(record.time).toLocaleString('zh-CN',{timeZone:'Asia/Bangkok'})} (曼谷时间)</p>
+    </div>`;
+  try{
+    const resp=await fetch('https://www.pushplus.plus/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:PUSHPLUS_TOKEN,title,content,template:'html'})});
+    const r=await resp.json();
+    if(r.code===200){showToast('报备已发送','success')}else{showToast('发送失败: '+r.msg,'error')}
+  }catch(e){showToast('网络错误','error')}
+  btn.disabled=false;btn.textContent='📨 发送报备';
+  $('remark').value='';clearPhoto();refreshAll()
+}
 
-  try {
-    const resp = await fetch('https://www.pushplus.plus/send', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token: TOKEN, title, content, template: 'html' })
-    });
-    const result = await resp.json();
-    if (result.code === 200) {
-      showToast('报备成功！对方已收到 📨', 'success');
-      saveHistory(location, status, remark, bkTime);
-      document.getElementById('remark').value = '';
-    } else {
-      showToast('发送失败: ' + (result.msg || '未知错误'), 'error');
-    }
-  } catch (e) {
-    showToast('网络出问题了，重试一下～', 'error');
+function initMap(){
+  const data=getData();const withCoord=data.filter(d=>d.lat&&d.lng);
+  if(!map){
+    map=L.map('map').setView([13.7563,100.5018],6);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap'}).addTo(map);
   }
-
-  btn.disabled = false;
-  btn.textContent = '📨 发送报备';
+  markers.forEach(m=>map.removeLayer(m));markers=[];
+  if(polyline){map.removeLayer(polyline);polyline=null}
+  const colors={安全:'#00b894',注意:'#fdcb6e',紧急:'#d63031'};
+  const coords=[];
+  withCoord.forEach(d=>{
+    const latlng=[parseFloat(d.lat),parseFloat(d.lng)];
+    coords.push(latlng);
+    const m=L.circleMarker(latlng,{radius:8,fillColor:colors[d.status],color:'#fff',weight:2,fillOpacity:.9})
+      .bindPopup(`<b>${d.loc}</b><br>${d.status} · ${new Date(d.time).toLocaleString('zh-CN',{timeZone:'Asia/Bangkok'})}`)
+      .addTo(map);
+    markers.push(m)
+  });
+  if(coords.length>=2){polyline=L.polyline(coords,{color:'#e84393',weight:3,dashArray:'8 6'}).addTo(map)}
+  if(coords.length>0){map.fitBounds(coords.length===1?[coords[0]]:coords,{padding:[40,40]})}
+  renderTimeline(data)
 }
 
-function saveHistory(location, status, remark, time) {
-  const raw = localStorage.getItem(STORAGE_KEY);
-  const list = raw ? JSON.parse(raw) : [];
-  list.push({ location, status, remark, time });
-  if (list.length > 50) list.shift();
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
-  renderHistory(list);
+function renderTimeline(data){
+  const c=$('timelineList');if(data.length===0){c.innerHTML='<div class="empty">暂无报备记录</div>';return}
+  c.innerHTML=data.slice().reverse().map((d,i)=>{
+    const cls=d.status==='安全'?'safe':d.status==='注意'?'warn':'danger';
+    return `<div class="timeline-item ${cls}">
+      <div class="ts">${new Date(d.time).toLocaleString('zh-CN',{timeZone:'Asia/Bangkok'})}</div>
+      <div class="loc">${d.status==='紧急'?'🔴':d.status==='注意'?'🟡':'🟢'} ${d.loc}</div>
+      ${d.lat&&d.lng?`<div style="font-size:11px;color:#aaa">${d.lat}, ${d.lng}</div>`:''}
+      ${d.remark?`<div class="rmk">${d.remark}</div>`:''}
+      ${d.photo?`<img class="thumb" src="${d.photo}" onclick="window.open(this.src)">`:''}
+      <button class="del-btn" onclick="delRecord('${d.id}')">✕</button>
+    </div>`
+  }).join('')
 }
 
-function escapeHtml(text) {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
+function delRecord(id){
+  if(!confirm('确定删除这条报备？'))return;
+  const data=getData().filter(d=>d.id!==id);saveData(data);refreshAll();showToast('已删除','success')
 }
 
-loadHistory();
+function refreshStats(){
+  const data=getData();const total=data.length;
+  const safe=data.filter(d=>d.status==='安全').length;
+  const warn=data.filter(d=>d.status==='注意').length;
+  const danger=data.filter(d=>d.status==='紧急').length;
+  const withCoord=data.filter(d=>d.lat&&d.lng).length;
+  let days=0;if(total>0){const ts=data.map(d=>new Date(d.time).getTime());days=Math.max(1,Math.ceil((Math.max(...ts)-Math.min(...ts))/86400000))}
+  $('statGrid').innerHTML=`<div class="stat-box"><div class="num">${total}</div><div class="label">报备次数</div></div><div class="stat-box"><div class="num">${withCoord}</div><div class="label">轨迹点</div></div><div class="stat-box"><div class="num">${days}</div><div class="label">旅行天数</div></div>`;
+  $('statBars').innerHTML=`
+    <div class="stat-bar"><span>安全</span><div class="bar-bg"><div class="bar-fill" style="width:${total?safe/total*100:0}%;background:#00b894"></div></div><span>${safe} (${total?Math.round(safe/total*100):0}%)</span></div>
+    <div class="stat-bar"><span>注意</span><div class="bar-bg"><div class="bar-fill" style="width:${total?warn/total*100:0}%;background:#fdcb6e"></div></div><span>${warn} (${total?Math.round(warn/total*100):0}%)</span></div>
+    <div class="stat-bar"><span>紧急</span><div class="bar-bg"><div class="bar-fill" style="width:${total?danger/total*100:0}%;background:#d63031"></div></div><span>${danger} (${total?Math.round(danger/total*100):0}%)</span></div>`;
+  generateReport()
+}
+
+function generateReport(){
+  const data=getData();const total=data.length;
+  if(total===0){$('reportBox').textContent='暂无报备数据';return}
+  const safe=data.filter(d=>d.status==='安全').length;
+  const warn=data.filter(d=>d.status==='注意').length;
+  const danger=data.filter(d=>d.status==='紧急').length;
+  const latest=data[data.length-1];
+  const ts=data.map(d=>new Date(d.time).getTime());
+  const from=new Date(Math.min(...ts)).toLocaleDateString('zh-CN',{timeZone:'Asia/Bangkok'});
+  const to=new Date(Math.max(...ts)).toLocaleDateString('zh-CN',{timeZone:'Asia/Bangkok'});
+  const days=Math.max(1,Math.ceil((Math.max(...ts)-Math.min(...ts))/86400000));
+  const report=`【泰国出行安全报告】
+━━━━━━━━━━━━━━
+📅 时间范围：${from} ~ ${to}（共${days}天）
+📊 报备总数：${total} 次
+🟢 安全：${safe} 次 (${Math.round(safe/total*100)}%)
+🟡 注意：${warn} 次 (${Math.round(warn/total*100)}%)
+🔴 紧急：${danger} 次 (${Math.round(danger/total*100)}%)
+━━━━━━━━━━━━━━
+📍 最新位置：${latest.loc}
+💭 最新状态：${latest.status}
+🕐 更新时间：${new Date(latest.time).toLocaleString('zh-CN',{timeZone:'Asia/Bangkok'})}
+${latest.remark?`💬 备注：${latest.remark}`:''}
+━━━━━━━━━━━━━━`;
+  $('reportBox').textContent=report
+}
+
+async function copyReport(){
+  const text=$('reportBox').textContent;
+  try{await navigator.clipboard.writeText(text);showToast('已复制到剪贴板','success')}catch(e){showToast('复制失败','error')}
+}
+
+function exportData(){
+  const data=getData();if(data.length===0){showToast('无数据可导出','error');return}
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download=`平安报备_${new Date().toISOString().slice(0,10)}.json`;a.click();
+  showToast('导出成功','success')
+}
+
+function importData(e){
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(ev){
+    try{
+      const imported=JSON.parse(ev.target.result);
+      if(!Array.isArray(imported))throw new Error('格式错误');
+      const existing=getData();const existIds=new Set(existing.map(d=>d.id));
+      const merged=[...existing,...imported.filter(d=>!existIds.has(d.id))];
+      saveData(merged);refreshAll();showToast(`导入 ${merged.length-existing.length} 条新记录`,'success')
+    }catch(e){showToast('文件格式错误','error')}
+  };
+  reader.readAsText(file);$('importInput').value=''
+}
+
+function confirmClear(){
+  if(confirm('确定清空全部报备数据？此操作不可恢复！')){saveData([]);refreshAll();showToast('已清空','success')}
+}
+
+function smsHelp(){
+  const phone=$('emergencyPhone').value.trim();
+  if(!phone){showToast('请先填写紧急联系人号码','error');return}
+  const data=getData();const latest=data.length>0?data[data.length-1]:null;
+  const locText=latest?`当前位置：${latest.loc}${latest.lat?` (${latest.lat},${latest.lng})`:''}，状态：${latest.status}`:'暂无位置信息';
+  const msg=encodeURIComponent(`【紧急求助】我在泰国需要帮助！${locText}`);
+  window.open(`sms:${phone}?body=${msg}`)
+}
+
+function toggleTip(el){el.nextElementSibling.classList.toggle('show')}
+
+function toggleReminder(){
+  if(reminderTimer){clearInterval(reminderTimer);reminderTimer=null;$('reminderBtn').textContent='🔔 开启定时提醒';showToast('提醒已关闭','success');return}
+  if(!('Notification' in window)){showToast('浏览器不支持通知','error');return}
+  Notification.requestPermission().then(p=>{
+    if(p==='granted'){
+      reminderTimer=setInterval(()=>{new Notification('平安报备提醒',{body:'该报备了！点击进入报备页面',icon:'🛡️'})},14400000);
+      $('reminderBtn').textContent='🔕 关闭定时提醒';showToast('已开启，每4小时提醒','success')
+    }else{showToast('需要允许通知权限','error')}
+  })
+}
+
+async function loadWeather(){
+  try{
+    const cities=[{name:'曼谷',lat:13.7563,lon:100.5018},{name:'普吉',lat:7.8804,lon:98.3923},{name:'清迈',lat:18.7883,lon:98.9853}];
+    const html=await Promise.all(cities.map(async c=>{
+      try{const r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${c.lat}&longitude=${c.lon}&current_weather=true`);const j=await r.json();
+        return `<div class="weather-card"><div class="city">${c.name}</div><div class="temp">${j.current_weather.temperature}°</div><div class="desc">${j.current_weather.weathercode}码</div></div>`
+      }catch(e){return `<div class="weather-card"><div class="city">${c.name}</div><div class="temp">--</div><div class="desc">获取失败</div></div>`}
+    }));
+    $('weatherGrid').innerHTML=html.join('')
+  }catch(e){$('weatherGrid').innerHTML='天气加载失败'}
+}
+
+function refreshAll(){const data=getData();renderTimeline(data);if(map)initMap();refreshStats()}
+
+loadWeather();refreshAll();
 </script>
 </body>
 </html>
