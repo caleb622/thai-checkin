@@ -70,6 +70,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .toast.show{opacity:1}
 .toast.success{background:var(--green)}
 .toast.error{background:var(--red)}
+.success-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:9999;opacity:0;pointer-events:none;transition:opacity .3s}
+.success-overlay.show{opacity:1;pointer-events:auto}
+.success-card{background:#fff;border-radius:20px;padding:32px 28px;text-align:center;max-width:320px;width:90%;animation:popIn .35s ease-out}
+@keyframes popIn{0%{transform:scale(.7);opacity:0}100%{transform:scale(1);opacity:1}}
+.success-card .check{width:72px;height:72px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:40px;color:#fff;animation:bounceIn .5s ease-out}
+@keyframes bounceIn{0%{transform:scale(0)}50%{transform:scale(1.15)}100%{transform:scale(1)}}
+.success-card h3{font-size:22px;color:#333;margin-bottom:6px}
+.success-card .status-tag{display:inline-block;padding:4px 14px;border-radius:20px;font-size:13px;font-weight:600;margin-bottom:8px}
+.success-card .status-tag.safe{background:#e6f9f1;color:var(--green)}
+.success-card .status-tag.warn{background:#fff9e6;color:#f39c12}
+.success-card .status-tag.danger{background:#ffeaea;color:var(--red)}
+.success-card .loc-text{font-size:14px;color:#666;line-height:1.5}
+.success-card .sub-text{font-size:12px;color:#aaa;margin-top:12px}
 .weather-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
 .weather-card{text-align:center;padding:12px 6px;background:var(--bg);border-radius:10px;font-size:12px}
 .weather-card .city{font-weight:600;color:#333}
@@ -83,6 +96,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 </head>
 <body>
 <div class="toast" id="toast"></div>
+<div class="success-overlay" id="successOverlay">
+  <div class="success-card">
+    <div class="check">✓</div>
+    <h3>报备已发送</h3>
+    <div class="status-tag" id="successStatus"></div>
+    <div class="loc-text" id="successLoc"></div>
+    <div class="sub-text">对方将收到微信推送</div>
+  </div>
+</div>
 
 <div id="tab-report" class="tab-content active">
   <div style="text-align:center;padding:12px 0 8px"><h2 style="font-size:20px;color:var(--pink)">🛡️ 平安报备 · 泰国</h2></div>
@@ -207,6 +229,15 @@ let map=null,markers=[],polyline=null,reminderTimer=null,photoData=null;
 function $(id){return document.getElementById(id)}
 
 function showToast(msg,type){const t=$('toast');t.textContent=msg;t.className='toast '+type+' show';setTimeout(()=>t.className='toast',2200)}
+function showSuccessFeedback(loc,status){
+  const stMap={安全:'safe',注意:'warn',紧急:'danger'};
+  const stLabel={安全:'🟢 一切平安',注意:'🟡 请注意',紧急:'🔴 紧急'};
+  $('successStatus').className='status-tag '+stMap[status];
+  $('successStatus').textContent=stLabel[status];
+  $('successLoc').textContent='📍 '+loc;
+  const overlay=$('successOverlay');overlay.classList.add('show');
+  setTimeout(()=>overlay.classList.remove('show'),2000)
+}
 
 function getData(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]')}catch(e){return[]}}
 function saveData(d){localStorage.setItem(STORAGE_KEY,JSON.stringify(d))}
@@ -278,7 +309,7 @@ async function submitReport(){
   try{
     const resp=await fetch('https://www.pushplus.plus/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:PUSHPLUS_TOKEN,title,content,template:'html'})});
     const r=await resp.json();
-    if(r.code===200){showToast('报备已发送','success')}else{showToast('发送失败: '+r.msg,'error')}
+    if(r.code===200){showSuccessFeedback(loc,status)}else{showToast('发送失败: '+r.msg,'error')}
   }catch(e){showToast('网络错误','error')}
   btn.disabled=false;btn.textContent='📨 发送报备';
   $('remark').value='';clearPhoto();refreshAll()
