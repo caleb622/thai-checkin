@@ -392,7 +392,7 @@ function renderTimeline(data){
       <div class="loc">${d.status==='紧急'?'🔴':d.status==='注意'?'🟡':'🟢'} ${d.loc}</div>
       ${d.lat&&d.lng?`<div style="font-size:11px;color:#aaa">${d.lat}, ${d.lng}</div>`:''}
       ${d.remark?`<div class="rmk">${d.remark}</div>`:''}
-      ${d.photo?`<img class="thumb" src="${d.photo}" onclick="window.open(this.src)">`:''}
+      ${d.photo?`<img class="thumb" src="${d.photo}" onclick="viewPhoto(this.src)">`:''}
       <button class="del-btn" onclick="delRecord('${d.id}')">✕</button>
     </div>`
   }).join('')
@@ -551,6 +551,12 @@ async function sendReport(){
     if(r.code===200){showToast('报告已发送','success')}else{showToast('发送失败: '+r.msg,'error')}
   }catch(e){showToast('网络错误','error')}
   btn.disabled=false;btn.textContent='📨 发微信'
+}
+
+function viewPhoto(src){
+  let ov=document.getElementById('photoOverlay');
+  if(!ov){ov=document.createElement('div');ov.id='photoOverlay';ov.innerHTML=`<div style="position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;align-items:center;justify-content:center;cursor:pointer" onclick="this.parentElement.remove()"><img src="" style="max-width:95vw;max-height:95vh;object-fit:contain;border-radius:8px"></div>`;document.body.appendChild(ov)}
+  ov.querySelector('img').src=src;ov.style.display='block'
 }
 
 function confirmClear(){
