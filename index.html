@@ -63,10 +63,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .info-item:last-child{border-bottom:none}
 .info-item .title{font-weight:600;color:#333}
 .info-item .detail{color:#666;font-size:12px}
-.tips-item{border:1px solid #eee;border-radius:10px;margin-bottom:8px;overflow:hidden}
-.tips-header{padding:12px;font-weight:600;font-size:14px;cursor:pointer;background:#fafafa;display:flex;justify-content:space-between}
-.tips-body{padding:12px;font-size:13px;color:#666;line-height:1.7;display:none}
-.tips-body.show{display:block}
 .toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);padding:10px 20px;border-radius:10px;color:#fff;font-size:13px;font-weight:600;z-index:999;opacity:0;transition:.3s;pointer-events:none}
 .toast.show{opacity:1}
 .toast.success{background:var(--green)}
@@ -246,18 +242,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
     <div class="weather-grid" id="weatherGrid">加载中...</div>
   </div>
   <div class="card">
-    <div class="card-title">💡 安全出行小贴士</div>
-    <div class="tips-item"><div class="tips-header" onclick="toggleTip(this)">🚕 交通防骗<span>▾</span></div><div class="tips-body">乘坐出租车务必要求打表(By Meter)，突突车先谈好价格。拒绝司机推荐的珠宝店、按摩店等回扣场所。建议使用Grab/Bolt打车软件。</div></div>
-    <div class="tips-item"><div class="tips-header" onclick="toggleTip(this)">🍜 饮食安全<span>▾</span></div><div class="tips-body">选择干净卫生的餐厅，避免生食和街头不洁饮品。随身携带肠胃药。711便利店随处可见，是补充物资的好去处。</div></div>
-    <div class="tips-item"><div class="tips-header" onclick="toggleTip(this)">💰 财物安全<span>▾</span></div><div class="tips-body">护照拍照存手机，原件锁酒店保险箱。背包背前面，小心飞车抢劫。大额现金分开放，ATM取款选银行内机器。</div></div>
-    <div class="tips-item"><div class="tips-header" onclick="toggleTip(this)">📱 通讯建议<span>▾</span></div><div class="tips-body">建议购买泰国本地SIM卡(TrueMove/AIS/dtac)，机场和711均可购买。开启手机定位共享功能，保持与家人联系。</div></div>
-  </div>
-  <div class="card">
-    <div class="card-title">⏰ 定时安全提醒</div>
-    <div style="font-size:13px;color:#666;margin-bottom:8px">开启后每4小时浏览器会弹出提醒</div>
-    <button class="btn btn-outline btn-sm" style="width:100%" id="reminderBtn" onclick="toggleReminder()">🔔 开启定时提醒</button>
-  </div>
-  <div class="card">
     <div class="card-title">🏅 旅行徽章</div>
     <div class="badge-grid" id="badgeGrid">加载中...</div>
   </div>
@@ -284,7 +268,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 <script>
 const PUSHPLUS_TOKEN='fd7f9d489507418bab7910cbac0c02ce';
 const STORAGE_KEY='thai_checkin_v2';
-let map=null,markers=[],polyline=null,reminderTimer=null,photoData=null;
+let map=null,markers=[],polyline=null,photoData=null;
 
 function $(id){return document.getElementById(id)}
 
@@ -572,20 +556,6 @@ async function sendReport(){
 function confirmClear(){
   if(confirm('确定清空全部报备数据？此操作不可恢复！')){saveData([]);refreshAll();showToast('已清空','success')}
 }
-
-function toggleTip(el){el.nextElementSibling.classList.toggle('show')}
-
-function toggleReminder(){
-  if(reminderTimer){clearInterval(reminderTimer);reminderTimer=null;$('reminderBtn').textContent='🔔 开启定时提醒';showToast('提醒已关闭','success');return}
-  if(!('Notification' in window)){showToast('浏览器不支持通知','error');return}
-  Notification.requestPermission().then(p=>{
-    if(p==='granted'){
-      reminderTimer=setInterval(()=>{new Notification('平安报备提醒',{body:'该报备了！点击进入报备页面',icon:'🛡️'})},14400000);
-      $('reminderBtn').textContent='🔕 关闭定时提醒';showToast('已开启，每4小时提醒','success')
-    }else{showToast('需要允许通知权限','error')}
-  })
-}
-
 let autoReportTimer=null;
 const AUTO_KEY='thai_checkin_auto_report';
 
