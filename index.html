@@ -84,6 +84,29 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .success-card .status-tag.danger{background:#ffeaea;color:var(--red)}
 .success-card .loc-text{font-size:14px;color:#666;line-height:1.5}
 .success-card .sub-text{font-size:12px;color:#aaa;margin-top:12px}
+.diary-modal{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:10000;display:flex;flex-direction:column;align-items:center;padding:20px;overflow-y:auto}
+.diary-modal .diary-wrap{position:relative;max-width:400px;width:100%;margin:auto}
+.diary-modal img{width:100%;border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,.4)}
+.diary-modal .diary-actions{display:flex;gap:8px;margin-top:16px;width:100%;max-width:400px}
+.diary-modal .diary-actions button{flex:1;padding:12px;border:none;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;color:#fff}
+.diary-modal .diary-actions .btn-send{background:var(--pink)}
+.diary-modal .diary-actions .btn-save{background:#636e72}
+.diary-modal .diary-close{position:absolute;top:-12px;right:-12px;width:32px;height:32px;border-radius:50%;background:#fff;border:none;font-size:18px;cursor:pointer;color:#333;box-shadow:0 2px 8px rgba(0,0,0,.2);display:flex;align-items:center;justify-content:center}
+#diaryCanvas{position:fixed;left:-9999px;top:0;width:400px;background:#fff;z-index:-1}
+#diaryCanvas .diary-page{background:linear-gradient(180deg,#fff5f7 0%,#fff 8%);padding:24px 20px 32px;min-height:100px}
+#diaryCanvas .diary-title{text-align:center;padding-bottom:16px;border-bottom:2px dashed #f0c0d0;margin-bottom:20px}
+#diaryCanvas .diary-title h2{font-size:22px;color:var(--pink);margin-bottom:4px}
+#diaryCanvas .diary-title .sub{font-size:12px;color:#999}
+#diaryCanvas .diary-date-header{display:flex;align-items:baseline;gap:8px;margin:16px 0 12px}
+#diaryCanvas .diary-date-header .day{font-size:28px;font-weight:800;color:var(--pink)}
+#diaryCanvas .diary-date-header .date-text{font-size:13px;color:#999}
+#diaryCanvas .diary-entry{background:#fafafa;border-radius:12px;padding:12px;margin-bottom:10px;display:flex;gap:10px}
+#diaryCanvas .diary-entry .entry-photo{width:64px;height:64px;border-radius:8px;object-fit:cover;flex-shrink:0;background:#eee}
+#diaryCanvas .diary-entry .entry-info{flex:1;min-width:0}
+#diaryCanvas .diary-entry .entry-loc{font-weight:600;font-size:14px;color:#333;margin-bottom:3px}
+#diaryCanvas .diary-entry .entry-meta{font-size:11px;color:#999}
+#diaryCanvas .diary-entry .entry-remark{font-size:12px;color:#666;margin-top:4px;line-height:1.5}
+#diaryCanvas .diary-footer{text-align:center;padding-top:16px;margin-top:20px;border-top:2px dashed #f0c0d0;font-size:11px;color:#bbb}
 .weather-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
 .weather-card{text-align:center;padding:12px 6px;background:var(--bg);border-radius:10px;font-size:12px}
 .weather-card .city{font-weight:600;color:#333}
@@ -104,6 +127,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
     <div class="status-tag" id="successStatus"></div>
     <div class="loc-text" id="successLoc"></div>
     <div class="sub-text">对方将收到微信推送</div>
+  </div>
+</div>
+
+<div id="diaryCanvas"></div>
+<div class="diary-modal" id="diaryModal" style="display:none">
+  <div class="diary-wrap">
+    <button class="diary-close" onclick="$('diaryModal').style.display='none'">✕</button>
+    <img id="diaryPreview" src="" alt="旅行日记">
+    <div class="diary-actions">
+      <button class="btn-send" onclick="sendDiaryToWechat()">📨 发送到微信</button>
+      <button class="btn-save" onclick="saveDiaryImage()">💾 保存图片</button>
+    </div>
   </div>
 </div>
 
@@ -151,8 +186,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 <div id="tab-map" class="tab-content">
   <div style="text-align:center;padding:12px 0 8px"><h2 style="font-size:20px;color:var(--pink)">🗺️ 安全轨迹</h2></div>
   <div id="map"></div>
-  <div style="text-align:center;margin-bottom:12px">
+  <div style="text-align:center;margin-bottom:12px;display:flex;gap:8px;justify-content:center">
     <button class="btn btn-pink btn-sm" onclick="captureMap()">📸 轨迹截图发微信</button>
+    <button class="btn btn-pink btn-sm" onclick="generateTravelDiary()">📜 生成旅行长图</button>
   </div>
   <div class="card">
     <div class="card-title">📋 报备时间线</div>
@@ -374,6 +410,74 @@ async function captureMap(){
     if(r.code===200){showToast('轨迹截图已发送','success')}else{showToast('发送失败: '+r.msg,'error')}
   }catch(e){showToast('截图失败','error')}
   btn.disabled=false;btn.textContent='📸 轨迹截图发微信'
+}
+
+let diaryImageData=null;
+
+async function generateTravelDiary(){
+  const data=getData();
+  if(data.length===0){showToast('暂无报备记录','error');return}
+  const btn=event.target;btn.disabled=true;btn.textContent='生成中...';
+
+  const grouped={};
+  data.forEach(d=>{
+    const date=new Date(d.time).toLocaleDateString('zh-CN',{timeZone:'Asia/Bangkok'});
+    if(!grouped[date])grouped[date]=[];
+    grouped[date].push(d);
+  });
+
+  const statusMap={安全:'🟢 平安',注意:'🟡 留意',紧急:'🔴 紧急'};
+  const dates=Object.keys(grouped).sort();
+  const from=dates[0],to=dates[dates.length-1];
+
+  const canvas=$('diaryCanvas');
+  canvas.innerHTML=`
+    <div class="diary-page">
+      <div class="diary-title">
+        <h2>🇹🇭 泰国旅行日记</h2>
+        <div class="sub">${from} ~ ${to} · 共 ${data.length} 条记录</div>
+      </div>
+      ${dates.map(date=>{
+        const dayDate=new Date(grouped[date][0].time);
+        const weekday=['周日','周一','周二','周三','周四','周五','周六'][dayDate.getDay()];
+        return `<div class="diary-date-header"><span class="day">${date.slice(-5)}</span><span class="date-text">${weekday}</span></div>
+        ${grouped[date].map(d=>`
+          <div class="diary-entry">
+            ${d.photo?`<img class="entry-photo" src="${d.photo}">`:`<div class="entry-photo" style="display:flex;align-items:center;justify-content:center;font-size:24px;color:#ddd;">📍</div>`}
+            <div class="entry-info">
+              <div class="entry-loc">${statusMap[d.status]} ${d.loc}</div>
+              <div class="entry-meta">${new Date(d.time).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit',timeZone:'Asia/Bangkok'})} 曼谷时间</div>
+              ${d.remark?`<div class="entry-remark">${d.remark}</div>`:''}
+            </div>
+          </div>`).join('')}`;
+      }).join('')}
+      <div class="diary-footer">🛡️ 平安报备 · ${new Date().toLocaleString('zh-CN',{timeZone:'Asia/Bangkok'})}</div>
+    </div>`;
+
+  try{
+    const c=await html2canvas(canvas.querySelector('.diary-page'),{useCORS:true,backgroundColor:'#fff',scale:2});
+    diaryImageData=c.toDataURL('image/png');
+    $('diaryPreview').src=diaryImageData;
+    $('diaryModal').style.display='flex';
+  }catch(e){showToast('生成失败','error')}
+  btn.disabled=false;btn.textContent='📜 生成旅行长图';
+}
+
+async function sendDiaryToWechat(){
+  if(!diaryImageData){showToast('先生成长图','error');return}
+  const content=`<div style="text-align:center;padding:4px"><img src="${diaryImageData}" style="width:100%;border-radius:12px"></div>`;
+  try{
+    const resp=await fetch('https://www.pushplus.plus/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:PUSHPLUS_TOKEN,title:'🇹🇭 泰国旅行日记',content,template:'html'})});
+    const r=await resp.json();
+    if(r.code===200){showToast('已发送到微信','success')}else{showToast('发送失败: '+r.msg,'error')}
+  }catch(e){showToast('网络错误','error')}
+}
+
+function saveDiaryImage(){
+  if(!diaryImageData){showToast('先生成长图','error');return}
+  const a=document.createElement('a');a.href=diaryImageData;
+  a.download=`旅行日记_${new Date().toISOString().slice(0,10)}.png`;a.click();
+  showToast('已保存','success')
 }
 
 function delRecord(id){
