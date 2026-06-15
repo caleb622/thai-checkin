@@ -116,6 +116,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .coord-row input{flex:1}
 .empty{text-align:center;color:#ccc;padding:30px;font-size:13px}
 @media(min-width:768px){.tab-content{max-width:700px}}
+.badge-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.badge-item{text-align:center;padding:12px 8px;border-radius:12px;background:#f0f0f0;transition:.3s;cursor:default}
+.badge-item.unlocked{background:linear-gradient(135deg,#fff9e6,#fff3cd);box-shadow:0 2px 8px rgba(253,203,110,.3)}
+.badge-item.locked{background:#f0f0f0;filter:grayscale(1);opacity:.45}
+.badge-icon{font-size:32px;margin-bottom:4px}
+.badge-name{font-size:11px;font-weight:600;color:#333;line-height:1.3}
+.badge-item.locked .badge-name{color:#aaa}
+.badge-sub{font-size:10px;color:#999;margin-top:2px}
 </style>
 </head>
 <body>
@@ -213,11 +221,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
   </div>
   <div class="card">
     <div style="display:flex;gap:8px">
-      <button class="btn btn-outline btn-sm" style="flex:1" onclick="exportData()">📤 导出数据</button>
-      <button class="btn btn-outline btn-sm" style="flex:1" onclick="document.getElementById('importInput').click()">📥 导入数据</button>
       <button class="btn btn-danger btn-sm" style="flex:1" onclick="confirmClear()">🗑 清空全部</button>
     </div>
-    <input type="file" id="importInput" accept=".json" style="display:none" onchange="importData(event)">
   </div>
 </div>
 
@@ -251,6 +256,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
     <div class="card-title">⏰ 定时安全提醒</div>
     <div style="font-size:13px;color:#666;margin-bottom:8px">开启后每4小时浏览器会弹出提醒</div>
     <button class="btn btn-outline btn-sm" style="width:100%" id="reminderBtn" onclick="toggleReminder()">🔔 开启定时提醒</button>
+  </div>
+  <div class="card">
+    <div class="card-title">🏅 旅行徽章</div>
+    <div class="badge-grid" id="badgeGrid">加载中...</div>
   </div>
 </div>
 
@@ -290,6 +299,7 @@ function switchTab(name){
   document.querySelector(`.tab-btn[onclick="switchTab('${name}')"]`).classList.add('active');
   if(name==='map'){setTimeout(initMap,200)}
   if(name==='stats')refreshStats()
+  if(name==='more')refreshBadges()
 }
 
 function getGPS(){
@@ -549,29 +559,6 @@ async function sendReport(){
   btn.disabled=false;btn.textContent='📨 发微信'
 }
 
-function exportData(){
-  const data=getData();if(data.length===0){showToast('无数据可导出','error');return}
-  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
-  a.download=`平安报备_${new Date().toISOString().slice(0,10)}.json`;a.click();
-  showToast('导出成功','success')
-}
-
-function importData(e){
-  const file=e.target.files[0];if(!file)return;
-  const reader=new FileReader();
-  reader.onload=function(ev){
-    try{
-      const imported=JSON.parse(ev.target.result);
-      if(!Array.isArray(imported))throw new Error('格式错误');
-      const existing=getData();const existIds=new Set(existing.map(d=>d.id));
-      const merged=[...existing,...imported.filter(d=>!existIds.has(d.id))];
-      saveData(merged);refreshAll();showToast(`导入 ${merged.length-existing.length} 条新记录`,'success')
-    }catch(e){showToast('文件格式错误','error')}
-  };
-  reader.readAsText(file);$('importInput').value=''
-}
-
 function confirmClear(){
   if(confirm('确定清空全部报备数据？此操作不可恢复！')){saveData([]);refreshAll();showToast('已清空','success')}
 }
@@ -601,7 +588,60 @@ async function loadWeather(){
   }catch(e){$('weatherGrid').innerHTML='天气加载失败'}
 }
 
-function refreshAll(){const data=getData();renderTimeline(data);if(map)initMap();refreshStats()}
+const BADGES=[
+  {id:'first',icon:'🙏',name:'萨瓦迪卡',sub:'首次报备',check:d=>d.length>=1},
+  {id:'beach',icon:'🏝️',name:'海岛探险家',sub:'到访海滩/海岛',check:d=>d.some(r=>/海滩|海岛|芭提雅|普吉|苏梅|甲米|皮皮|丽贝|沙美|涛岛|攀牙|华欣|兰塔/.test(r.loc))},
+  {id:'temple',icon:'🛕',name:'佛国行者',sub:'到访寺庙/佛寺',check:d=>d.some(r=>/寺庙|佛寺|寺院|玉佛寺|卧佛寺|郑王庙|白庙|黑庙|蓝庙|双龙寺|契迪龙寺|帕辛寺|黎明寺|云石寺/.test(r.loc))},
+  {id:'market',icon:'🌃',name:'夜市猎人',sub:'到访夜市/市场',check:d=>d.some(r=>/夜市|市场|水上市场|乍都乍|火车夜市|摩天轮夜市|周末市场|安帕瓦|丹嫩沙多|考山路/.test(r.loc))},
+  {id:'mall',icon:'🛍️',name:'购物达人',sub:'到访商场/购物',check:d=>d.some(r=>/商场|购物|暹罗|百丽宫|尚泰|Terminal|ICONSIAM|Central|MBK|Emporium|EmQuartier/.test(r.loc))},
+  {id:'food',icon:'🍜',name:'泰味食客',sub:'到访美食/餐厅',check:d=>d.some(r=>/美食|餐厅|小吃|米其林|街边|排挡|夜市摊|海南鸡饭|船面|泰式炒粉/.test(r.loc))},
+  {id:'island',icon:'🐠',name:'浮潜达人',sub:'到访潜水/浮潜',check:d=>d.some(r=>/潜水|浮潜|深潜| snorkel |潜水点|珊瑚|海洋公园/.test(r.loc))},
+  {id:'park',icon:'🌿',name:'丛林探险',sub:'到访国家公园',check:d=>d.some(r=>/国家公园|森林公园|自然保护区|丛林|热带雨林|考艾|茵他侬|爱侣湾/.test(r.loc))},
+  {id:'city3',icon:'🏙️',name:'三城记',sub:'到访3个以上不同城市',check:d=>{const cities=new Set(d.map(r=>r.loc.split(/[，,、\-—\s]/)[0]));return cities.size>=3}},
+  {id:'streak3',icon:'🔥',name:'三日游',sub:'连续3天报备',check:d=>calcStreak(d)>=3},
+  {id:'streak7',icon:'💎',name:'周游列国',sub:'连续7天报备',check:d=>calcStreak(d)>=7},
+  {id:'count10',icon:'🎖️',name:'常旅客',sub:'累计10次报备',check:d=>d.length>=10},
+  {id:'count30',icon:'👑',name:'泰漂达人',sub:'累计30次报备',check:d=>d.length>=30},
+  {id:'safe7',icon:'🍀',name:'平安七日',sub:'连续7天状态为安全',check:d=>d.length>=7&&maxSafeStreak(d)>=7},
+];
+
+function calcStreak(data){
+  if(!data.length)return 0;
+  const dates=[...new Set(data.map(r=>r.time.slice(0,10)))].sort();
+  let streak=1,max=1;
+  for(let i=1;i<dates.length;i++){
+    const prev=new Date(dates[i-1]),curr=new Date(dates[i]);
+    if((curr-prev)/864e5===1)streak++;
+    else{if(streak>max)max=streak;streak=1}
+  }
+  return Math.max(max,streak)
+}
+
+function maxSafeStreak(data){
+  if(!data.length)return 0;
+  const dates=[...new Set(data.filter(r=>r.status==='安全').map(r=>r.time.slice(0,10)))].sort();
+  let streak=1,max=1;
+  for(let i=1;i<dates.length;i++){
+    const prev=new Date(dates[i-1]),curr=new Date(dates[i]);
+    if((curr-prev)/864e5===1)streak++;
+    else{if(streak>max)max=streak;streak=1}
+  }
+  return Math.max(max,streak)
+}
+
+function refreshBadges(){
+  const data=getData(),grid=$('badgeGrid');
+  grid.innerHTML=BADGES.map(b=>{
+    const unlocked=b.check(data);
+    return `<div class="badge-item ${unlocked?'unlocked':'locked'}">
+      <div class="badge-icon">${b.icon}</div>
+      <div class="badge-name">${b.name}</div>
+      <div class="badge-sub">${unlocked?'已解锁':b.sub}</div>
+    </div>`;
+  }).join('')
+}
+
+function refreshAll(){const data=getData();renderTimeline(data);if(map)initMap();refreshStats();refreshBadges()}
 
 loadWeather();refreshAll();
 </script>
