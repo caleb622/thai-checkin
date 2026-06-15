@@ -350,11 +350,11 @@ function handlePhoto(e){
     const img=new Image();
     img.onload=function(){
       let w=img.width,h=img.height;
-      const MAX=800;
+      const MAX=400;
       if(w>MAX||h>MAX){const r=Math.min(MAX/w,MAX/h);w=Math.round(w*r);h=Math.round(h*r)}
       const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;
       canvas.getContext('2d').drawImage(img,0,0,w,h);
-      photoData=canvas.toDataURL('image/jpeg',0.5);
+      photoData=canvas.toDataURL('image/jpeg',0.3);
       $('photoPreview').src=photoData;$('photoPreview').style.display='block';
       $('photoPlaceholder').style.display='none';$('photoClear').style.display='inline-block'
     };
